@@ -11,7 +11,7 @@
 
 ## Descrição
 
-Este projeto consiste na implementação de um emulador para um computador hipotético descrito no livro de Calinagert. O emulador reproduz as funcionalidades básicas, como manipulação de memória e registradores, e interpreta um conjunto específico de instruções.
+Este projeto consiste na implementação de um emulador para um computador hipotético descrito no livro de Calinagert. O emulador reproduz as funcionalidades básicas, como manipulação de memória e registradores, e interpreta um conjunto específico de instruções. O trabalho está sendo realizado para a disciplina de Programação de Sistemas pela UFPel.
 
 ## Características
 
