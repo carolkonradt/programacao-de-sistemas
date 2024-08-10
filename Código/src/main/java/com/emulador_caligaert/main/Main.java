@@ -1,11 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
+package com.emulador_caligaert.main;
 
-package com.ps.ps_trabalho;
-
-import com.ps.modules.Machine;
-import java.util.HashMap;
+import com.emulador_caligaert.virtual_machine.Machine;
 
 /**
  *
