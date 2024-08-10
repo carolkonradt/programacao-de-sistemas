@@ -271,6 +271,8 @@ public class Machine {
                 return call(operands.get(0));
             case 16:
                 return ret();
+            default:
+                break;
         }
         return true;
     }
