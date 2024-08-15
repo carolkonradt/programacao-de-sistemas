@@ -1,4 +1,4 @@
-package com.emulador_caligaert.virtual_machine;
+package com.emulador_caligaert.model.virtual_machine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
