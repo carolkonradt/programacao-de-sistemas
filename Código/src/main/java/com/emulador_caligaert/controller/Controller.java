@@ -2,6 +2,10 @@ package com.emulador_caligaert.controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
 
 public class Controller {
 
@@ -18,14 +22,16 @@ public class Controller {
     private TextField operacaoField;
 
     @FXML
-    private Button clearButton, inputButton, resetButton;
+    private Button clearButton, resetButton, fileButton;
+
+    private Stage stage;
 
     @FXML
     public void initialize() {
         // Adicione ações aqui para os botões e outros componentes
         clearButton.setOnAction(e -> outputArea.clear());
-        inputButton.setOnAction(e -> processOperation());
         resetButton.setOnAction(e -> resetFields());
+        fileButton.setOnAction(e -> selectFile());
     }
 
     private void processOperation() {
@@ -45,5 +51,23 @@ public class Controller {
         memoriaList.getItems().clear();
         pilhaList.getItems().clear();
         outputArea.clear();
+    }
+
+    private void selectFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Selecione um Arquivo");
+        // Filtrar para apenas arquivos de texto
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Text Files", "*.txt"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+
+        // Mostrar o diálogo de seleção de arquivos
+        File selectedFile = fileChooser.showOpenDialog(stage);
+
+        if (selectedFile != null) {
+            outputArea.appendText("Arquivo selecionado: " + selectedFile.getAbsolutePath() + "\n");
+            // Aqui você pode adicionar lógica para processar o arquivo, se necessário
+        }
     }
 }
