@@ -7,6 +7,9 @@ import javafx.stage.Stage;
 
 import java.io.File;
 
+/** Classe responsável pelo controle e ligação
+ * do código backend com a interface visual
+ */
 public class Controller {
 
     @FXML
@@ -26,6 +29,10 @@ public class Controller {
 
     private Stage stage;
 
+    /**
+     * Neste método estão relacionadas todas as ações para botões
+     * e outros componentes dispostos na interface visual.
+     */
     @FXML
     public void initialize() {
         // Adicione ações aqui para os botões e outros componentes
@@ -34,13 +41,18 @@ public class Controller {
         fileButton.setOnAction(e -> selectFile());
     }
 
+    /**
+     * Lógica para processar a operação.
+     */
     private void processOperation() {
-        // Lógica para processar a operação
         String operacao = operacaoField.getText();
         outputArea.appendText("Operação: " + operacao + "\n");
         operacaoField.clear();
     }
 
+    /**
+     * Limpa todos os campos da interface visual.
+     */
     private void resetFields() {
         pcField.clear();
         spField.clear();
@@ -53,6 +65,13 @@ public class Controller {
         outputArea.clear();
     }
 
+    /**Método que abre a seleção do arquivo a ser carregado
+     *na máquina virtual através do JavaFX
+     * @author Filhos do Alan
+     * @param -
+     * @return void
+     *
+     */
     private void selectFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Selecione um Arquivo");

@@ -17,7 +17,11 @@ public class Main extends Application {
 
     }
 
-
+    /**
+     * Inicializa o programa.
+     * @param primaryStage - primeira tela da interface
+     * @throws IOException
+     */
     @Override
     public void start(Stage primaryStage) throws IOException {
         // Carrega o arquivo FXML

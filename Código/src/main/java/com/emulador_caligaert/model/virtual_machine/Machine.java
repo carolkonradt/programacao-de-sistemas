@@ -5,8 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
 
-/**
- *
+/**Classe dedicada a implementação da máquina virtual
  * @author rboeira
  */
 public class Machine {
@@ -14,7 +13,13 @@ public class Machine {
     private Memory mem;
     private HashMap<String, Register> registers;
     private Stack stack;
-    
+
+    /**
+     * Método construtor da máquina virtual.
+     * Adiciona a um HashMap todas as instruções da máquina.
+     * Estas instruções serão decodificadas de acordo com o código inserido na máquina.
+     * @param memSize - um int que determina o tamanho da memória
+     */
     public Machine(int memSize){
         this.instructions = new HashMap<>();
         this.mem = new Memory(memSize);
@@ -126,7 +131,12 @@ public class Machine {
         registers.put("PC", new Register(16));
         registers.put("SP", new Register(16));
     }
-    
+
+    /**Método que seleciona o modo de acesso à memória.
+     * @param numOfOperands - número de operandos;
+     * @param accessConfig - modo como estão arranjados os bits que definem o tipo de endereçamento;
+     * @return modo de acesso à memória pela instrução: 0->D; 1->In; 2->Im.
+     */
     public String selectAccessMode(int numOfOperands, int accessConfig){
         if (accessConfig > 5)
             return "";
@@ -157,7 +167,13 @@ public class Machine {
         
         return "";
     }
-    
+
+    /**Método que decodifica a instrução, descobre quantos operandos tem, e utiliza
+     * outros métodos como o selectAccessMode para ajudar na tarefa
+     * @param instruction - a instrução a ser decodificada
+     * @return uma chamada ao método run com parâmetros operation, numOfOperands,
+     *          operands, instructionAccessMode.
+     */
     public boolean decode(String instruction){
         LinkedList<String> instructionInfo; 
         
@@ -224,6 +240,15 @@ public class Machine {
         
         return run(operation, numOfOperands, operands, instructionAccessMode);
     }
+
+    /**
+     *
+     * @param operation - define qual operação será executada
+     * @param numOfOperands - número de operandos da operação
+     * @param operands - quais os operandos da operação
+     * @param instructionAccessMode - modo de acesso à memória pela operação
+     * @return boolean
+     */
     
     public boolean run(int operation, int numOfOperands, ArrayList<Integer> operands, String[] instructionAccessMode){
         for (int i=0; i<numOfOperands; i++){
@@ -272,17 +297,34 @@ public class Machine {
         }
         return true;
     }
-    
-    // Implementação dos modos de endereçamento
+
+
+    /**
+     * Implementação do modo de endereçamento direto
+     * @param operand - operando
+     * @return um inteiro que representa a palavra que está dentro do endereço
+     */
     private int directAddress(int operand) {
         return mem.read(operand); // O operando é o próprio endereço na memória
     }
 
+    /**
+     * Implementação do modo de endereçamento indireto
+     * @param operand - operando
+     * @return um inteiro que representa a palavra que está dentro do endereço apontado pelo endereço
+     *         do operando.
+     */
     private int indirectAddress(int operand) {
         // O operando é um endereço que aponta para outro endereço na memória
         return mem.read(mem.read(operand));
     }
-    
+
+    /**
+     *
+     * @param mode - modo de acesso à memória
+     * @param operand - operando a ser utilizado na operação
+     * @return um int que representa a palavra buscada.
+     */
     private int searchOperand(int mode, int operand) {
         switch (mode) {
             case 0: // Direto
