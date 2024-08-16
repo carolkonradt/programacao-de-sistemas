@@ -5,3 +5,4 @@ pom.xml
 out/production/programacao-de-sistemas
 META-INF
 out/artifacts/programacao_de_sistemas_jar/programacao-de-sistemas.jar
+/.idea/ 
