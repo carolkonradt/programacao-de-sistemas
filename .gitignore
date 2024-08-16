@@ -1,3 +1,7 @@
 *.vscode
 *.class
 pom.xml
+.idea
+out/production/programacao-de-sistemas
+META-INF
+out/artifacts/programacao_de_sistemas_jar/programacao-de-sistemas.jar

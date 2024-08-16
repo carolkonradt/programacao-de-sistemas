@@ -62,6 +62,30 @@
                      <RowConstraints />
                   </rowConstraints>
                     </GridPane>
+               <VBox prefHeight="200.0" prefWidth="100.0" alignment="CENTER" spacing="10">
+                  <children>
+                     <Button fx:id="fileButton" text="Selecionar Arquivo">
+                        <VBox.margin>
+                           <Insets left="10.0" top="10.0" />
+                        </VBox.margin>
+                     </Button>
+                     <Button mnemonicParsing="false" prefHeight="25.0" prefWidth="117.0" text="Run">
+                        <VBox.margin>
+                           <Insets left="10.0" top="10.0" />
+                        </VBox.margin>
+                     </Button>
+                     <Button mnemonicParsing="false" prefHeight="25.0" prefWidth="117.0" text="Step">
+                        <VBox.margin>
+                           <Insets left="10.0" top="10.0" />
+                        </VBox.margin>
+                     </Button>
+                        <Button fx:id="resetButton" prefHeight="25.0" prefWidth="116.0" text="Reset">
+                        <VBox.margin>
+                           <Insets left="10.0" top="10.0" />
+                        </VBox.margin>
+                     </Button>
+                  </children>
+               </VBox>
                 </children>
             <padding>
                <Insets top="15.0" />
@@ -72,24 +96,27 @@
             <VBox>
                 <children>
                     <Label text="Memoria" />
-                    <ListView fx:id="memoriaList" prefWidth="200.0" />
+                    <ListView fx:id="memoriaList" prefHeight="459.0" prefWidth="200.0" />
                 </children>
             </VBox>
             
-            <VBox>
+            <VBox prefWidth="200.0">
                 <children>
                     <Label text="Pilha" />
-                    <ListView fx:id="pilhaList" prefWidth="200.0" />
-                </children>
-            </VBox>
-
-            <!-- Output -->
-            <VBox spacing="10.0">
-                <children>
-                    <Label text="OUTPUT" />
-                    <TextArea fx:id="outputArea" prefHeight="300.0" prefWidth="200.0" />
-                    <Button fx:id="clearButton" text="CLEAR" />
-               <Button fx:id="fileButton" text="Selecionar Arquivo" />
+                    <ListView fx:id="pilhaList" prefHeight="213.0" prefWidth="150.0" />
+      
+                  <!-- Output -->
+                  <VBox spacing="10.0">
+                      <children>
+                          <Label text="OUTPUT" />
+                          <TextArea fx:id="outputArea" prefHeight="184.0" prefWidth="200.0" />
+                          <Button fx:id="clearButton" text="CLEAR">
+                        <VBox.margin>
+                           <Insets />
+                        </VBox.margin>
+                     </Button>
+                      </children>
+                  </VBox>
                 </children>
             </VBox>
         </HBox>
@@ -100,7 +127,6 @@
             <padding>
                 <Insets bottom="10" left="10" right="10" top="10" />
             </padding>
-            <Button fx:id="resetButton" text="Reset" />
         </HBox>
     </bottom>
 </BorderPane>
