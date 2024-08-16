@@ -1,4 +1,4 @@
-# Programacao de Sistemas - Emulador Calinagert 
+# Programacao de Sistemas - Emulador Calingaert 
 ## Contribuintes:
 - Ana Carolina Nornberg Konradt
 - Bernardo Garcia Ferrão
