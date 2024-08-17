@@ -13,18 +13,21 @@ public class Machine {
     private Memory mem;
     private HashMap<String, Register> registers;
     private Stack stack;
+    private int stackSize;
 
     /**
      * Método construtor da máquina virtual.
      * Adiciona a um HashMap todas as instruções da máquina.
      * Estas instruções serão decodificadas de acordo com o código inserido na máquina.
      * @param memSize - um int que determina o tamanho da memória
+     * @param stackSize - um int que determina o tamanho da pilha
      */
-    public Machine(int memSize){
+    public Machine(int memSize, int stackSize){
         this.instructions = new HashMap<>();
         this.mem = new Memory(memSize);
         this.registers = new HashMap<>();
         this.stack = new Stack();
+        this.stackSize = stackSize;
 
         LinkedList<String> instructionInfo = new LinkedList<>();
         
@@ -130,6 +133,8 @@ public class Machine {
         registers.put("RE", new Register(16));
         registers.put("PC", new Register(16));
         registers.put("SP", new Register(16));
+
+        mem.write(2, stackSize);
     }
 
     /**Método que seleciona o modo de acesso à memória.
@@ -339,46 +344,68 @@ public class Machine {
     }
 
     private boolean add(int operand){
+        int currentACC = registers.get("ACC").getData();
+        registers.get("ACC").setData(currentACC + operand);
         return true;
     }
     
     private boolean sub(int operand){
+        int currentACC = registers.get("ACC").getData();
+
+        registers.get("ACC").setData(currentACC - operand);
         return true;
     }
     
     private boolean mult(int operand){
+        int currentACC = registers.get("ACC").getData();
+
+        registers.get("ACC").setData(currentACC * operand);
         return true;
     }
     
     private boolean divide(int operand){
+        int currentACC = registers.get("ACC").getData();
+
+        registers.get("ACC").setData(currentACC / operand);
         return true;
     }
     
     private boolean br(int operand){
+        registers.get("PC").setData(operand);
         return true;
     }
     
     private boolean brneg(int operand){
+        if (registers.get("ACC").getData() < 0)
+            registers.get("PC").setData(operand);
         return true;
     }
     
     private boolean brpos(int operand){
+        if (registers.get("ACC").getData() > 0)
+            registers.get("PC").setData(operand);
         return true;
     }
 
     private boolean brzero(int operand){
+        if (registers.get("ACC").getData() == 0)
+            registers.get("PC").setData(operand);
         return true;
     }
     
     private boolean load(int memPosition){
+        int memData = mem.read(memPosition);
+        registers.get("ACC").setData(memData);
         return true;
     }
     
     private boolean store(int memPosition){
+        mem.write(memPosition, registers.get("ACC").getData());
         return true;
     }
     
     private boolean copy(int operandA, int operandB){
+        mem.write(operandA, operandB);
         return true;
     }
     
@@ -391,10 +418,17 @@ public class Machine {
     }
     
     private boolean call(int operand){
+        if (stack.size() == stackSize){
+            return false;
+        }
+
+        stack.push(registers.get("PC").getData());
+        registers.get("PC").setData(operand);
         return true;
     }
     
     private boolean ret(){
+        registers.get("PC").setData((int) stack.pop());
         return true;
     }
     
