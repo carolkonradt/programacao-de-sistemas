@@ -1,0 +1,107 @@
+Registradores na Arquitetura:
+    Registradores Básicos:
+        PC (Program Counter): Contador de instruções, 16 bits.
+        SP (Stack Pointer): Ponteiro de pilha, 16 bits.
+    Demais Registradores:
+        ACC (Acumulador): 16 bits.
+        MOP (Modo de Operação): 8 bits.
+        RI (Registrador de Instrução): 16 bits.
+        RE (Registrador de Endereço de Memória): 16 bits.
+
+Implementação dos Registradores:
+Vamos implementar uma classe Registrador que pode ser usada para representar qualquer um desses registradores. Em seguida, criaremos uma classe CPU que terá instâncias de Registrador para cada um dos registradores mencionados.
+
+CÓDIGO:
+// Classe para representar um registrador genérico
+class Registrador {
+    private int valor;
+    private int tamanho;
+
+    // Construtor para inicializar o registrador com o tamanho em bits
+    public Registrador(int tamanhoBits) {
+        this.tamanho = tamanhoBits;
+        this.valor = 0; // Inicialmente, o registrador contém 0
+    }
+
+    // Método para definir o valor do registrador
+    public void setValor(int valor) {
+        int maxValor = (1 << this.tamanho) - 1; // Calcula o valor máximo que pode ser armazenado no registrador
+        this.valor = valor & maxValor; // Assegura que o valor esteja dentro dos limites
+    }
+
+    // Método para obter o valor do registrador
+    public int getValor() {
+        return this.valor;
+    }
+
+    // Método para incrementar o valor do registrador
+    public void incrementar() {
+        this.setValor(this.valor + 1);
+    }
+
+    // Método para decrementar o valor do registrador
+    public void decrementar() {
+        this.setValor(this.valor - 1);
+    }
+}
+
+// Classe para representar a CPU com todos os registradores
+class CPU {
+    public Registrador PC; // Contador de instruções
+    public Registrador SP; // Ponteiro de pilha
+    public Registrador ACC; // Acumulador
+    public Registrador MOP; // Modo de operação
+    public Registrador RI; // Registrador de instrução
+    public Registrador RE; // Registrador de endereço de memória
+
+    // Construtor para inicializar todos os registradores da CPU
+    public CPU() {
+        this.PC = new Registrador(16);
+        this.SP = new Registrador(16);
+        this.ACC = new Registrador(16);
+        this.MOP = new Registrador(8);
+        this.RI = new Registrador(16);
+        this.RE = new Registrador(16);
+    }
+
+    // Método para reiniciar todos os registradores (opcional)
+    public void reiniciar() {
+        this.PC.setValor(0);
+        this.SP.setValor(0);
+        this.ACC.setValor(0);
+        this.MOP.setValor(0);
+        this.RI.setValor(0);
+        this.RE.setValor(0);
+    }
+
+    // Métodos adicionais para manipular registradores específicos podem ser adicionados aqui
+}
+
+// Exemplo de uso da CPU e seus registradores
+public class Main {
+    public static void main(String[] args) {
+        CPU cpu = new CPU();
+
+        // Manipulação dos registradores
+        cpu.PC.setValor(10);
+        System.out.printf("Valor do PC: %04X\n", cpu.PC.getValor());
+
+        cpu.ACC.setValor(0xABCD);
+        System.out.printf("Valor do ACC: %04X\n", cpu.ACC.getValor());
+
+        cpu.SP.incrementar();
+        System.out.printf("Valor do SP após incremento: %04X\n", cpu.SP.getValor());
+
+        cpu.SP.decrementar();
+        System.out.printf("Valor do SP após decremento: %04X\n", cpu.SP.getValor());
+    }
+}
+
+Explicação do Código:
+- Classe Registrador: Representa um registrador genérico. Pode ser configurado para diferentes tamanhos em bits, permitindo flexibilidade ao criar registradores como PC, SP, ACC, etc. Ela inclui métodos para definir, obter, incrementar e decrementar o valor do registrador.
+
+- Classe CPU: Contém todos os registradores necessários para a arquitetura descrita. Cada registrador é uma instância da classe Registrador.
+
+- Métodos de Manipulação: A classe CPU pode ser estendida com métodos adicionais para manipular registradores de formas específicas conforme necessário.
+
+- Exemplo de Uso: O método main demonstra como manipular os registradores, incluindo a definição de valores e operações de incremento e decremento.

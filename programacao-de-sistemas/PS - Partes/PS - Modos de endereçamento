@@ -1,0 +1,104 @@
+Os modos de endereçamento determinam como os operandos das instruções são acessados na memória ou nos registradores.
+Modos de Endereçamento:
+    Direto: O operando é o endereço direto da memória onde o dado está armazenado.
+    Indireto: O operando aponta para um endereço de memória, que por sua vez contém o endereço do dado.
+    Imediato: O operando é o próprio dado a ser utilizado.
+    Indexado: (Não aplicável conforme o trabalho especificado, será ignorado).
+
+Implementação em Java:
+Vamos implementar os modos de endereçamento em uma classe que simulará a execução das instruções, acessando a memória conforme o modo de endereçamento especificado.
+
+CÓDIGO:
+public class CPU {
+    public Registrador PC;  // Contador de instruções
+    public Registrador SP;  // Ponteiro de pilha
+    public Registrador ACC; // Acumulador
+    public Registrador MOP; // Modo de operação
+    public Registrador RI;  // Registrador de instrução
+    public Registrador RE;  // Registrador de endereço de memória
+    private Memoria memoria; // Referência à memória do sistema
+
+    // Construtor para inicializar todos os registradores da CPU e associar a memória
+    public CPU(Memoria memoria) {
+        this.PC = new Registrador(16);
+        this.SP = new Registrador(16);
+        this.ACC = new Registrador(16);
+        this.MOP = new Registrador(8);
+        this.RI = new Registrador(16);
+        this.RE = new Registrador(16);
+        this.memoria = memoria;
+    }
+
+    // Implementação dos modos de endereçamento
+    public int enderecoDireto(int operando) {
+        return operando; // O operando é o próprio endereço na memória
+    }
+
+    public int enderecoIndireto(int operando) {
+        // O operando é um endereço que aponta para outro endereço na memória
+        int endereco = this.memoria.ler(operando);
+        return endereco;
+    }
+
+    public int valorImediato(int operando) {
+        return operando; // O operando é o próprio valor
+    }
+
+    // Método para buscar o valor de acordo com o modo de endereçamento
+    public int buscarOperando(int modo, int operando) {
+        switch (modo) {
+            case 0: // Direto
+                return this.memoria.ler(enderecoDireto(operando));
+            case 1: // Indireto
+                return this.memoria.ler(enderecoIndireto(operando));
+            case 2: // Imediato
+                return valorImediato(operando);
+            default:
+                throw new IllegalArgumentException("Modo de endereçamento inválido");
+        }
+    }
+
+    // Exemplo de uma operação de LOAD com endereçamento
+    public void load(int modo, int operando) {
+        int valor = buscarOperando(modo, operando);
+        this.ACC.setValor(valor);
+        System.out.printf("Valor carregado no ACC: %04X\n", this.ACC.getValor());
+    }
+}
+
+// Exemplo de uso dos modos de endereçamento
+public class Main {
+    public static void main(String[] args) {
+        // Inicializando a memória com 1 KB
+        Memoria memoria = new Memoria(1);
+
+        // Escrevendo valores de teste na memória
+        memoria.escrever(100, 0x1234); // Endereço 100 contém o valor 0x1234
+        memoria.escrever(200, 100);    // Endereço 200 contém o endereço 100
+
+        // Inicializando a CPU
+        CPU cpu = new CPU(memoria);
+
+        // Teste com endereçamento direto
+        cpu.load(0, 100); // Deve carregar 0x1234 no ACC
+
+        // Teste com endereçamento indireto
+        cpu.load(1, 200); // Deve carregar 0x1234 no ACC, pois o endereço 200 aponta para o endereço 100
+
+        // Teste com valor imediato
+        cpu.load(2, 0x5678); // Deve carregar 0x5678 no ACC
+    }
+}
+
+EXPLICAÇÃO:
+- Classe CPU: Agora contém métodos para diferentes modos de endereçamento. A classe tem um atributo memoria que referencia a memória do sistema.
+
+Modos de Endereçamento:
+    - Direto: A função enderecoDireto retorna o operando como o endereço de memória.
+    - Indireto: A função enderecoIndireto lê o endereço da memória apontado pelo operando.
+    - Imediato: A função valorImediato retorna o próprio operando como o valor a ser utilizado.
+
+- Método buscarOperando: Esse método decide, com base no modo de endereçamento, como buscar o valor correto da memória.
+- Método load: Exemplo de como uma instrução LOAD pode ser implementada usando esses modos de endereçamento. Carrega um valor na memória para o acumulador (ACC) dependendo do modo de endereçamento.
+
+Exemplo de Uso: O método main mostra como usar a CPU para executar uma instrução LOAD com diferentes modos de endereçamento.

@@ -1,0 +1,81 @@
+Passos para Implementação:
+1 - Definir a Estrutura de Memória:
+    - A memória será representada como um array de palavras (16 bits).
+    - Precisamos de métodos para leitura e escrita na memória.
+
+2 - Configurar o Tamanho da Memória:
+    - O tamanho da memória será configurável, mas não pode ser menor que 1 KB (1024 palavras de 16 bits).
+
+
+CÓDIGO:
+
+public class Memoria {
+    private int[] memoria; // Array para armazenar as palavras de memória (16 bits cada)
+    private int tamanho; // Tamanho da memória em palavras
+
+    // Construtor para inicializar a memória com um tamanho especificado
+    public Memoria(int tamanhoKB) {
+        // Convertendo o tamanho de KB para palavras (1 KB = 1024 palavras de 16 bits)
+        this.tamanho = tamanhoKB * 1024;
+        this.memoria = new int[this.tamanho];
+    }
+
+    // Método para escrever uma palavra na memória em um endereço específico
+    public void escrever(int endereco, int valor) {
+        if (endereco >= 0 && endereco < this.tamanho) {
+            this.memoria[endereco] = valor & 0xFFFF; // Garantindo que o valor seja de 16 bits
+        } else {
+            System.out.println("Erro: Endereço fora dos limites da memória.");
+        }
+    }
+
+    // Método para ler uma palavra da memória em um endereço específico
+    public int ler(int endereco) {
+        if (endereco >= 0 && endereco < this.tamanho) {
+            return this.memoria[endereco];
+        } else {
+            System.out.println("Erro: Endereço fora dos limites da memória.");
+            return -1; // Retorna um valor inválido se o endereço for fora dos limites
+        }
+    }
+
+    // Método para obter o tamanho da memória
+    public int getTamanho() {
+        return this.tamanho;
+    }
+
+    // Método para imprimir o conteúdo da memória (para depuração)
+    public void imprimirMemoria() {
+        for (int i = 0; i < this.tamanho; i++) {
+            System.out.printf("Endereço %d: %04X\n", i, this.memoria[i]);
+        }
+    }
+
+    public static void main(String[] args) {
+        // Exemplo de uso da memória
+        Memoria memoria = new Memoria(1); // Criando uma memória de 1 KB (1024 palavras)
+
+        // Escrevendo e lendo na memória
+        memoria.escrever(0, 0xABCD);
+        int valor = memoria.ler(0);
+        System.out.printf("Valor lido da memória: %04X\n", valor);
+
+        // Tentativa de escrever em um endereço inválido
+        memoria.escrever(2000, 0x1234); // Deve gerar um erro
+
+        // Imprimindo o conteúdo da memória (opcional, para depuração)
+        memoria.imprimirMemoria();
+    }
+}
+
+EXPLICAÇÃO do Código:
+
+- Classe Memoria: Representa a memória do computador. A memória é implementada como um array de inteiros (int), onde cada inteiro representa uma palavra de 16 bits.
+
+- Construtor: Inicializa a memória com um tamanho especificado em kilobytes. O tamanho da memória em palavras é tamanhoKB * 1024.
+
+- Métodos escrever e ler: Permitem escrever e ler valores da memória em endereços específicos. O método escrever assegura que o valor escrito tenha no máximo 16 bits.
+
+- Método imprimir Memoria: Imprime o conteúdo da memória para fins de depuração.
+
+- Exemplo de Uso: O método main mostra um exemplo de como usar a classe Memoria.
