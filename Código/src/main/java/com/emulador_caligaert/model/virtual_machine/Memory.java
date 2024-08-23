@@ -26,7 +26,7 @@ public class Memory {
      */
     public void write(int address, int data) {
         if (address >= 0 && address < size)
-            memory[address] = data & 0xFFFF; // Garantindo que o valor seja de 16 bits
+            memory[address] = data; // Garantindo que o valor seja de 16 bits
         else
             System.out.println("Erro: Endereço fora dos limites da memória.");
     }
@@ -41,6 +41,21 @@ public class Memory {
         } else {
             System.out.println("Erro: Endereço fora dos limites da memória.");
             return -1; // Retorna um valor inválido se o endereço for fora dos limites
+        }
+    }
+
+    public int getSize(){
+        return this.size;
+    }
+
+    public void clear(){
+        for (int i=0; i<size; i++)
+            memory[i] = 0;
+    }
+
+    public void printMemory(){
+        for (int i=0; i<size; i++){
+            System.out.println(memory[i]);
         }
     }
 }

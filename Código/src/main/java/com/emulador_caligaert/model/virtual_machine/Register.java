@@ -5,7 +5,7 @@ import static java.lang.Math.pow;
 /**Classe responsável pela implementação dos registradores da máquina virtual
  * @author rboeira
  */
-class Register {
+public class Register {
     private int data;
     private int size;
 
@@ -22,7 +22,7 @@ class Register {
      * @return void
      */
     public void setData(int data) {
-        this.data = data & ((int)pow(2, size));
+        this.data = data;
     }
 
     /**Método responsávle por obter o valor do registrador
@@ -31,5 +31,9 @@ class Register {
      */
     public int getData() {
         return this.data;
+    }
+
+    public void clear(){
+        this.data = 0;
     }
 }
