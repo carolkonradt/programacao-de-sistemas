@@ -36,9 +36,10 @@ public class Machine {
         this.mem = new Memory(memSize);
         this.registers = new HashMap<>();
         this.stack = new Stack();
+        this.errorMessage = new ErrorMessage();
         this.stackSize = stackSize;
         this.outputArea = outputArea;
-        this.errorMessage = new ErrorMessage();
+
 
         mem.write(2, stackSize);
 

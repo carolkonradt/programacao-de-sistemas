@@ -18,8 +18,9 @@ public class ErrorMessage {
             case 9: return "Instrução inválida: Mnemônico não corresponde a nenhuma instrução do computador.\n";
             case 10: return "Falta diretiva END: Indicação da ausência de pseudo-instrução END.\n";
             case 11: return "Erro ao ler o arquivo.\n";  //ADICIONADO
-            case 12: return "Modo de endereçamento incorreto: A instrução não permite esse modo de endereçamento.\n";
-            default: return "Erro não identificado.\n";
+            case 12: return "Modo de endereçamento incorreto: A instrução não permite esse modo de endereçamento.\n"; //ADICIONADO
+            case 13: return "Erro ao escrever nos arquivos de saída.\n"; //ADICIONADO
+            default: return "Erro não identificado.\n"; //ADICIONADO
         }
     }
 }

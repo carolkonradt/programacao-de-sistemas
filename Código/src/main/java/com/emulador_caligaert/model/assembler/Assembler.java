@@ -1,5 +1,8 @@
 package com.emulador_caligaert.model.assembler;
 
+import com.emulador_caligaert.model.virtual_machine.ErrorMessage;
+import javafx.scene.control.TextArea;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -24,8 +27,10 @@ public class Assembler {
     private int MAX_INSTRUCTION_ITEMS = 5;
     private ArrayList<String> errorMessages;
     private ArrayList<String> instructionList;
+    private ErrorMessage errorMessage;
+    private TextArea outputArea;
 
-    public Assembler(){
+    public Assembler(TextArea outputArea){
         this.mnemonics = new HashMap<>();
         this.assemblerInstructions = new HashMap<>();
         this.symbolsTable = new HashMap<>();
@@ -34,6 +39,7 @@ public class Assembler {
         this.ocurrenceTable = new HashMap<>();
         this.errorMessages = new ArrayList<>();
         this.instructionList = new ArrayList<>();
+        this.outputArea = outputArea;
 
         mnemonics.put("ADD",2);
         mnemonics.put("SUB",6);
@@ -73,6 +79,7 @@ public class Assembler {
                 String[] instructionParts = instruction.split("\\s+");
 
                 if (!validateInstruction(instruction.length(), instructionParts.length)) {
+                    outputArea.appendText(errorMessage.getErrorMessage(9));
                     errorMessages.add("Erro: Instrução inválida na linha: " + instruction);
                     continue;
                 }
@@ -85,6 +92,7 @@ public class Assembler {
 
                 if (isLabel(firstSymbol)){
                     if (!validateLabel(firstSymbol)){
+                        outputArea.appendText(errorMessage.getErrorMessage(6));
                         errorMessages.add("Erro: Label inválido: " + firstSymbol);
                         continue;
                     }
@@ -97,13 +105,14 @@ public class Assembler {
 
                 if (handleAssemblerInstruction(instruction, instructionStart))
                     continue;
-
+                outputArea.appendText(errorMessage.getErrorMessage(9));
                 errorMessages.add("Erro: Instrução não reconhecida: " + instruction);
             }
             fileReader.close();
             writeOnOutputFile(filepath);
             printTables();
         } catch (FileNotFoundException e) {
+            outputArea.appendText(errorMessage.getErrorMessage(11));
             errorMessages.add("Erro: Arquivo não encontrado.");
             return false;
         }
@@ -158,6 +167,7 @@ public class Assembler {
                 // label
                 if (isLabel(operand)) {
                     if (!validateLabel(operand)){
+                        outputArea.appendText(errorMessage.getErrorMessage(6));
                         errorMessages.add("Erro: Label inválido: " + operand);
                         return false;
                     }
@@ -183,6 +193,7 @@ public class Assembler {
         int requiredElements = assemblerInstructions.get(operation);
 
         if (numOfElements != requiredElements) {
+            outputArea.appendText(errorMessage.getErrorMessage(6));
             errorMessages.add("Erro: Número inválido de elementos para operação: " + operation);
             return false;
         }
@@ -206,6 +217,7 @@ public class Assembler {
                     if (definitionTable.get(label) == -1)
                         definitionTable.replace(label, PC);
                     else {
+                        outputArea.appendText(errorMessage.getErrorMessage(7));
                         errorMessages.add("Erro: Variável já inicializada: " + label);
                         return false;
                     }
@@ -227,6 +239,7 @@ public class Assembler {
                     if (definitionTable.get(label) == -1)
                         definitionTable.replace(label, PC);
                     else {
+                        outputArea.appendText(errorMessage.getErrorMessage(7));
                         errorMessages.add("Erro: Variável já inicializada: " + label);
                         return false;
                     }
@@ -286,6 +299,7 @@ public class Assembler {
             lstFileWriter.close();
 
         } catch (IOException e) {
+            outputArea.appendText(errorMessage.getErrorMessage(13));
             System.out.println("Erro ao escrever nos arquivos de saída.");
         }
     }
