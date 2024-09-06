@@ -2,6 +2,8 @@ package com.emulador_caligaert.model.assembler;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -18,9 +20,11 @@ public class Assembler {
     private int offset = 0;
     private int PC = 0;
     private int stkSize;
-    private int MAX_INSTRUCTION_LENGHT = 80;
+    private int MAX_INSTRUCTION_LENGTH = 80;
     private int MAX_INSTRUCTION_ITEMS = 5;
-    
+    private ArrayList<String> errorMessages;
+    private ArrayList<String> instructionList;
+
     public Assembler(){
         this.mnemonics = new HashMap<>();
         this.assemblerInstructions = new HashMap<>();
@@ -28,6 +32,8 @@ public class Assembler {
         this.definitionTable = new HashMap<>();
         this.usageTable = new HashMap<>();
         this.ocurrenceTable = new HashMap<>();
+        this.errorMessages = new ArrayList<>();
+        this.instructionList = new ArrayList<>();
 
         mnemonics.put("ADD",2);
         mnemonics.put("SUB",6);
@@ -65,9 +71,11 @@ public class Assembler {
             while (fileReader.hasNextLine()) {
                 String instruction = fileReader.nextLine().trim();
                 String[] instructionParts = instruction.split("\\s+");
-                //System.out.println(instruction);
-                if (!validateInstruction(instruction.length(), instructionParts.length))
-                    return false;
+
+                if (!validateInstruction(instruction.length(), instructionParts.length)) {
+                    errorMessages.add("Erro: Instrução inválida na linha: " + instruction);
+                    continue;
+                }
 
                 if (instructionParts.length == 0 || instructionParts[0].startsWith("*"))    // linha em branco ou comentário
                     continue;
@@ -76,9 +84,10 @@ public class Assembler {
                 int instructionStart = 0;
 
                 if (isLabel(firstSymbol)){
-                    if (validateLabel(firstSymbol))
-                        return false;
-
+                    if (!validateLabel(firstSymbol)){
+                        errorMessages.add("Erro: Label inválido: " + firstSymbol);
+                        continue;
+                    }
                     addNewSymbol(firstSymbol);
                     instructionStart = firstSymbol.length();
                 }
@@ -89,11 +98,13 @@ public class Assembler {
                 if (handleAssemblerInstruction(instruction, instructionStart))
                     continue;
 
-                return false;
+                errorMessages.add("Erro: Instrução não reconhecida: " + instruction);
             }
             fileReader.close();
+            writeOnOutputFile(filepath);
             printTables();
         } catch (FileNotFoundException e) {
+            errorMessages.add("Erro: Arquivo não encontrado.");
             return false;
         }
         return true;
@@ -146,15 +157,16 @@ public class Assembler {
 
                 // label
                 if (isLabel(operand)) {
-                    if (validateLabel(operand))
+                    if (!validateLabel(operand)){
+                        errorMessages.add("Erro: Label inválido: " + operand);
                         return false;
+                    }
                     foundLabel(operand);
                     operands = operands.concat(operand + " ");
                 }
             }
             instructionCode = opCode + " " + operands;
-            System.out.println(instructionCode);
-            // escreve a instruçao no arquivo
+            instructionList.add(instructionCode);
             return true;
         }
         return false;
@@ -170,8 +182,10 @@ public class Assembler {
         String operation = instructionParts[opIndex];
         int requiredElements = assemblerInstructions.get(operation);
 
-        if (numOfElements != requiredElements)
+        if (numOfElements != requiredElements) {
+            errorMessages.add("Erro: Número inválido de elementos para operação: " + operation);
             return false;
+        }
 
         if (operation.equals("START")) {
             return true;
@@ -191,13 +205,14 @@ public class Assembler {
                     symbolsTable.remove(label);
                     if (definitionTable.get(label) == -1)
                         definitionTable.replace(label, PC);
-                    else
-                        return false;   // variável já inicializada
+                    else {
+                        errorMessages.add("Erro: Variável já inicializada: " + label);
+                        return false;
+                    }
                 }
                 else
                     addNewSymbol(label);
-                //escreve operando no arquivo
-                System.out.println(operand);
+                instructionList.add(operand);
             }
             PC++;
             return true;
@@ -211,15 +226,16 @@ public class Assembler {
 
                     if (definitionTable.get(label) == -1)
                         definitionTable.replace(label, PC);
-                    else
-                        return false;   // variável já inicializada
+                    else {
+                        errorMessages.add("Erro: Variável já inicializada: " + label);
+                        return false;
+                    }
                 }
                 else
                     addNewSymbol(label);
             }
+            instructionList.add("0");
             PC++;
-            //escreve 0 no arquivo
-            System.out.println(0);
             return true;
         }
         if (operation.equals("INTDEF")){
@@ -239,6 +255,74 @@ public class Assembler {
             return true;
         }
         return false;
+    }
+
+    private void writeOnOutputFile(String filepath) {
+        try {
+            FileWriter objFileWriter = new FileWriter(filepath + ".obj");
+            FileWriter lstFileWriter = new FileWriter(filepath + ".lst");
+
+            // Escreve o código objeto (.OBJ)
+            for (String line : instructionList) {
+                objFileWriter.write(line + "\n");
+            }
+
+            // Escreve a listagem (.LST)
+            for (String line : instructionList) {
+                lstFileWriter.write(line + "\n");
+            }
+
+            // Escreve a lista de erros, se houver
+            if (!errorMessages.isEmpty()) {
+                lstFileWriter.write("\nErros encontrados:\n");
+                for (String error : errorMessages) {
+                    lstFileWriter.write(error + "\n");
+                }
+            } else {
+                lstFileWriter.write("\nNenhum erro detectado.\n");
+            }
+
+            objFileWriter.close();
+            lstFileWriter.close();
+
+        } catch (IOException e) {
+            System.out.println("Erro ao escrever nos arquivos de saída.");
+        }
+    }
+
+    public boolean validateInstruction(int instructionLength, int numOfComponents){
+        if (instructionLength > MAX_INSTRUCTION_LENGTH)
+            return false;
+
+        if (numOfComponents > MAX_INSTRUCTION_ITEMS)
+            return false;
+
+        return true;
+    }
+
+    public boolean validateLabel(String label){
+        if (label.length() > 8)
+            return false;
+        if (!Character.isLetter(label.charAt(0)))
+            return false;
+
+        return true;
+    }
+
+    private boolean isLabel(String symbol){
+        return !mnemonics.containsKey(symbol) && !assemblerInstructions.containsKey(symbol);
+    }
+
+    private boolean addNewSymbol(String label){
+        if (definitionTable.containsKey(label) || usageTable.containsKey(label))
+            return true;
+
+        if (!symbolsTable.containsKey(label))
+            symbolsTable.put(label, PC);
+        else
+            return false;       // variavel já inicializada
+
+        return true;
     }
 
     private boolean intuse(String label){
@@ -268,41 +352,6 @@ public class Assembler {
         return true;
     }
 
-    public boolean validateInstruction(int instructionLength, int numOfComponents){
-        if (instructionLength > MAX_INSTRUCTION_LENGHT)
-            return false;
-
-        if (numOfComponents > MAX_INSTRUCTION_ITEMS)
-            return false;
-
-        return true;
-    }
-
-    public boolean validateLabel(String label){
-        if (label.length() > 8)
-            return true;
-        if (!Character.isLetter(label.charAt(0)))
-            return true;
-
-        return false;
-    }
-
-    private boolean isLabel(String symbol){
-        return !mnemonics.containsKey(symbol) && !assemblerInstructions.containsKey(symbol);
-    }
-
-    private boolean addNewSymbol(String label){
-        if (definitionTable.containsKey(label) || usageTable.containsKey(label))
-            return true;
-
-        if (!symbolsTable.containsKey(label))
-            symbolsTable.put(label, PC);
-        else
-            return false;       // variavel já inicializada
-
-        return true;
-    }
-
     private void foundLabel(String label) {
         if (!ocurrenceTable.containsKey(label)){
             ArrayList<Integer> occurrences = new ArrayList<>();
@@ -314,12 +363,7 @@ public class Assembler {
         }
     }
 
-    private void writeOnOutputFile(String instructionCode, String filepath){
-
-    }
-
     private void printTables(){
-
         System.out.println("-----------------DT----------------------");
         for (String key: definitionTable.keySet())
             System.out.println(key+" "+definitionTable.get(key));
@@ -333,5 +377,4 @@ public class Assembler {
         System.out.println("---------------------------------------");
 
     }
-    
 }
