@@ -23,6 +23,7 @@ public class Machine {
     private int programEnd;
     private TextArea outputArea;
     private HashMap<Integer, String> errorMessages;
+    private ErrorMessage errorMessage;
 
     /**
      * Método construtor da máquina virtual.
@@ -37,6 +38,7 @@ public class Machine {
         this.stack = new Stack();
         this.stackSize = stackSize;
         this.outputArea = outputArea;
+        this.errorMessage = new ErrorMessage();
 
         mem.write(2, stackSize);
 
@@ -226,7 +228,7 @@ public class Machine {
         try{
             instructionInfo = instructions.get(operation);
         } catch(Exception e) {
-            outputArea.appendText("Instrução não encontrada!");
+            outputArea.appendText(errorMessage.getErrorMessage(9));
             return false;
         }
 
@@ -263,7 +265,7 @@ public class Machine {
             programEnd = programStart+i;
             fileReader.close();
         } catch (FileNotFoundException e) {
-            outputArea.appendText("Erro ao ler o arquivo."+"\n");
+            outputArea.appendText(errorMessage.getErrorMessage(11));
             return false;
         }
         return true;
@@ -310,12 +312,12 @@ public class Machine {
         //outputArea.appendText("all "+ allowedAccessModes+"\n");
 
         if (numOfOperands != requiredOperands){
-            outputArea.appendText("São necessários " + requiredOperands + " operandos, mas foram lidos " + numOfOperands + "!\n");
+            outputArea.appendText(errorMessage.getErrorMessage(6));
             return false;
         }
 
         if (((bitFive + bitSix + bitSeven) != requiredOperands) && (accessConfig != 0)){
-            outputArea.appendText("Modo de endereçamento incorreto");
+            outputArea.appendText(errorMessage.getErrorMessage(12));
             return false;
         }
 
@@ -325,7 +327,7 @@ public class Machine {
             //outputArea.appendText("md "+ mode+"\n");
 
             if (!(allowedAccessModes.contains(mode)) || mode.equals("")){
-                outputArea.appendText("A instrução não permite esse modo de endereçamento!");
+                outputArea.appendText(errorMessage.getErrorMessage(12));
                 return false;
             }
         }
