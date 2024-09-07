@@ -1,5 +1,6 @@
 package com.emulador_caligaert.controller;
 
+import com.emulador_caligaert.model.assembler.Assembler;
 import com.emulador_caligaert.model.virtual_machine.Machine;
 import com.emulador_caligaert.model.virtual_machine.Memory;
 import com.emulador_caligaert.model.virtual_machine.Register;
@@ -12,7 +13,9 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
+import java.util.Scanner;
 import java.util.Stack;
 
 /** Classe responsável pelo controle e ligação
@@ -21,9 +24,7 @@ import java.util.Stack;
 public class Controller {
 
     private String filepath;
-
     private boolean fileAvailable = false;
-
     private Machine virtualMachine;
 
     @FXML
@@ -46,51 +47,56 @@ public class Controller {
 
     private Stage stage;
     private File selectedFile;
+
     /**
      * Neste método estão relacionadas todas as ações para botões
      * e outros componentes dispostos na interface visual.
      */
     @FXML
     public void initialize() {
-        // Adicione ações aqui para os botões e outros componentes
         virtualMachine = new Machine(1, 10, outputArea);
 
         clearButton.setOnAction(e -> outputArea.clear());
-        resetButton.setOnAction(e -> resetFields());
+        resetButton.setOnAction(e -> resetFields());  // Botão de reset configurado corretamente
         fileButton.setOnAction(e -> selectFile());
         runButton.setOnAction(e -> run());
         stepButton.setOnAction(e -> step());
     }
 
     /**
-     * Lógica para processar a operação.
+     * Limpa todos os campos da interface visual e reinicia a máquina virtual.
      */
-    private void processOperation() {
-        String operacao = operacaoField.getText();
-        outputArea.appendText("Operação: " + operacao + "\n");
-        operacaoField.clear();
+    private void resetFields() {
+        // Reinicia a máquina virtual
+        virtualMachine.restartMachine();
+
+        // Limpa a área de texto (outputArea)
+        outputArea.clear();
+
+        // Limpa os campos de registradores
+        pcField.clear();
+        spField.clear();
+        accField.clear();
+        mopField.clear();
+        riField.clear();
+        reField.clear();
+
+        // Limpa as listas de memória e pilha
+        memoriaList.setItems(FXCollections.observableArrayList());
+        pilhaList.setItems(FXCollections.observableArrayList());
+
+        // Atualiza a interface gráfica
+        memoriaList.refresh();
+        pilhaList.refresh();
     }
 
     /**
-     * Limpa todos os campos da interface visual.
-     */
-    private void resetFields() {
-        virtualMachine.restartMachine();
-        outputArea.clear();
-        updateView();
-    }
-
-    /**Método que abre a seleção do arquivo a ser carregado
-     *na máquina virtual através do JavaFX
-     * @author Filhos do Alan
-     * @param -
-     * @return void
-     *
+     * Método que abre a seleção do arquivo a ser carregado
+     * na máquina virtual através do JavaFX
      */
     private void selectFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Selecione um Arquivo");
-        // Filtrar para apenas arquivos de texto
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Text Files", "*.txt"),
                 new FileChooser.ExtensionFilter("All Files", "*.*")
@@ -106,9 +112,25 @@ public class Controller {
         }
     }
 
-    private void run(){
-        if (!fileAvailable)     // mostrar janela dizendo para upar arquivo
+    /**
+     * Executa o programa na máquina virtual e exibe o conteúdo do arquivo .lst (código original e montado).
+     */
+    private void run() {
+        if (!fileAvailable) {
+            outputArea.appendText("Por favor, selecione um arquivo.\n");
             return;
+        }
+
+        // Chamar o montador para gerar o arquivo .lst
+        Assembler assembler = new Assembler(outputArea);
+        if (assembler.mount(filepath)) {
+            outputArea.appendText("Montagem completada com sucesso!\n");
+
+            // Exibir o conteúdo do arquivo .lst gerado
+            displayLstFile(filepath + ".lst");
+        } else {
+            outputArea.appendText("Erro durante a montagem. Verifique o arquivo.\n");
+        }
 
         virtualMachine.restartMachine();
         virtualMachine.loadProgram(filepath);
@@ -116,12 +138,37 @@ public class Controller {
         mopField.setText("1");
         if (virtualMachine.runProgram())
             outputArea.appendText("Programa executado com sucesso!\n");
+        else
+            outputArea.appendText("Erro durante a execução do programa.\n");
         updateView();
     }
 
-    private void step(){
-        if (!fileAvailable)     // mostrar janela dizendo para upar arquivo
+    /**
+     * Método para exibir o conteúdo do arquivo .lst no outputArea.
+     */
+    private void displayLstFile(String filepath) {
+        try {
+            File lstFile = new File(filepath);
+            Scanner fileReader = new Scanner(lstFile);
+            outputArea.appendText("\nConteúdo do arquivo .lst:\n");
+            while (fileReader.hasNextLine()) {
+                String line = fileReader.nextLine();
+                outputArea.appendText(line + "\n");
+            }
+            fileReader.close();
+        } catch (FileNotFoundException e) {
+            outputArea.appendText("Erro: Arquivo .lst não encontrado.\n");
+        }
+    }
+
+    /**
+     * Executa o programa passo a passo na máquina virtual.
+     */
+    private void step() {
+        if (!fileAvailable) {
+            outputArea.appendText("Por favor, selecione um arquivo.\n");
             return;
+        }
 
         if (virtualMachine.getMOP() != 2) {
             virtualMachine.restartMachine();
@@ -129,13 +176,17 @@ public class Controller {
             virtualMachine.setMOP(2);
             mopField.setText("2");
         }
+
         if (!virtualMachine.runProgram()) {
             virtualMachine.setMOP(0);
-            step();
         }
+
         updateView();
     }
 
+    /**
+     * Atualiza a interface de acordo com o estado da máquina virtual.
+     */
     private void updateView() {
         HashMap<String, Register> registers = virtualMachine.getRegisters();
         ObservableList<String> memItems = FXCollections.observableArrayList();
@@ -143,25 +194,29 @@ public class Controller {
 
         for (String key : registers.keySet()) {
             TextField reg = (TextField) gdRegs.lookup("#" + key.toLowerCase() + "Field");
-
             reg.setText(Integer.toString(registers.get(key).getData()));
         }
 
         Memory mem = virtualMachine.getMemory();
         int memSize = mem.getSize();
 
-        for (int i=0; i<memSize; i++)
+        for (int i = 0; i < memSize; i++)
             memItems.add(Integer.toHexString(mem.read(i)));
 
-        memoriaList = new ListView<>(memItems);
+        memoriaList.setItems(memItems);
         memoriaList.refresh();
-        Stack stack = virtualMachine.getStack();
 
-        for (int num: (Stack<Integer>) stack)
+        Stack<Integer> stack = virtualMachine.getStack();
+        for (int num : stack) {
             stkItems.add(Integer.toHexString(num));
+        }
 
-        pilhaList = new ListView<>(stkItems);
-        System.out.println("------------------------------------");
-        virtualMachine.getMemory().printMemory();
+        pilhaList.setItems(stkItems);
+        pilhaList.refresh();
+    }
+
+    // Configura o Stage para ser utilizado pelo FileChooser
+    public void setStage(Stage stage) {
+        this.stage = stage;
     }
 }

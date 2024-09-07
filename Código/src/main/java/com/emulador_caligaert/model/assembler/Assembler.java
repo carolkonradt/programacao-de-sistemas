@@ -30,7 +30,8 @@ public class Assembler {
     private int MAX_INSTRUCTION_LENGTH = 80;
     private int MAX_INSTRUCTION_ITEMS = 5;
     private ArrayList<String> errorMessages;
-    private ArrayList<String> instructionList;
+    private ArrayList<String> instructionList;       // Montado
+    private ArrayList<String> originalList;          // Original
     private ErrorMessage errorMessage;
     private TextArea outputArea;
 
@@ -43,6 +44,7 @@ public class Assembler {
         this.ocurrenceTable = new HashMap<>();
         this.errorMessages = new ArrayList<>();
         this.instructionList = new ArrayList<>();
+        this.originalList = new ArrayList<>();         // Inicializando para armazenar o original
         this.outputArea = outputArea;
         this.errorMessage = new ErrorMessage();
         this.symbolsTables = new ArrayList<>();
@@ -84,6 +86,7 @@ public class Assembler {
 
             while (fileReader.hasNextLine()) {
                 String instruction = fileReader.nextLine().trim();
+                originalList.add(instruction);  // Armazenando a linha original
                 String[] instructionParts = instruction.split("\\s+");
 
                 if (!validateInstruction(instruction, instructionParts.length)) {
@@ -188,7 +191,7 @@ public class Assembler {
                 }
             }
             instructionCode = opCode + " " + operands;
-            instructionList.add(instructionCode);
+            instructionList.add(instructionCode);  // Adicionando instrução montada
             return true;
         }
         return false;
@@ -279,9 +282,11 @@ public class Assembler {
                 objFileWriter.write(line + "\n");
             }
 
-            // Escreve a listagem (.LST)
-            for (String line : instructionList) {
-                lstFileWriter.write(line + "\n");
+            // Escreve a listagem (.LST) - código original e montado lado a lado
+            for (int i = 0; i < originalList.size(); i++) {
+                String original = originalList.get(i);
+                String mounted = (i < instructionList.size()) ? instructionList.get(i) : "N/A";
+                lstFileWriter.write(String.format("%-40s | %s\n", original, mounted));  // Alinhamento lado a lado
             }
 
             // Escreve a lista de erros, se houver
@@ -305,7 +310,7 @@ public class Assembler {
     public boolean validateInstruction(String instruction, int numOfComponents){
         if ((instruction.length() > MAX_INSTRUCTION_LENGTH) || (numOfComponents > MAX_INSTRUCTION_ITEMS)){
             outputArea.appendText(errorMessage.getErrorMessage(9));
-            errorMessages.add("Erro: Instrução inválida na linha: " + instruction);    
+            errorMessages.add("Erro: Instrução inválida na linha: " + instruction);
             return false;
         }
 
@@ -342,7 +347,7 @@ public class Assembler {
 
         if (usageTable.containsKey(label))
             return true;
-            
+
         if (symbolsTable.containsKey(label)){
             if (symbolsTable.get(label) == -1)
                 symbolsTable.replace(label, PC);
@@ -360,7 +365,7 @@ public class Assembler {
     private void foundLabel(String label) {
         if (!isDeclared(label))
             symbolsTable.put(label, -1);
-        
+
         if (!ocurrenceTable.containsKey(label)){
             ArrayList<Integer> occurrences = new ArrayList<>();
             occurrences.add(PC);
@@ -438,7 +443,7 @@ public class Assembler {
                 instructionCode = instructionCode.concat(address+" ");
                 currentInstruction++;
             }
-        
+
             if (currentInstruction == this.offset.get(programIndex)){
                 currentInstruction = 0;
                 offset = offset + this.offset.get(programIndex);
