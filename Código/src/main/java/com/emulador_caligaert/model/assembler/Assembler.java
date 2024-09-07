@@ -86,7 +86,6 @@ public class Assembler {
 
             while (fileReader.hasNextLine()) {
                 String instruction = fileReader.nextLine().trim();
-                originalList.add(instruction);  // Armazenando a linha original
                 String[] instructionParts = instruction.split("\\s+");
 
                 if (!validateInstruction(instruction, instructionParts.length)) {
@@ -192,6 +191,7 @@ public class Assembler {
             }
             instructionCode = opCode + " " + operands;
             instructionList.add(instructionCode);  // Adicionando instrução montada
+            originalList.add(instruction);
             return true;
         }
         return false;
@@ -235,8 +235,10 @@ public class Assembler {
             if (opIndex > 0){
                 String operand = instructionParts[opIndex+1];
 
-                if (operand.matches("\\d+"))
+                if (operand.matches("\\d+")){
                     instructionList.add(operand);
+                    originalList.add(instruction);
+                }
                 else
                     return false;
             }
@@ -245,8 +247,10 @@ public class Assembler {
         }
 
         if (operation.equals("SPACE")){
-            if (opIndex > 0)
+            if (opIndex > 0){
                 instructionList.add("0");
+                originalList.add(instruction);
+            }
             PC++;
             return true;
         }
