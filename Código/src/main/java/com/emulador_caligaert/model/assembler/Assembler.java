@@ -15,12 +15,16 @@ public class Assembler {
     private HashMap<String, Integer> mnemonics;
     private HashMap<String, Integer> assemblerInstructions;
 
+    private ArrayList<HashMap<String, Integer>> symbolsTables;
+    private ArrayList<HashMap<String, Integer>> definitionTables;
+    private ArrayList<HashMap<String, Integer>> usageTables;
+
     private HashMap<String, Integer> symbolsTable;
     private HashMap<String, Integer> definitionTable;
     private HashMap<String, Integer> usageTable;
     private HashMap<String, ArrayList<Integer>> ocurrenceTable;
 
-    private int offset = 0;
+    private ArrayList<Integer> offset;
     private int PC = 0;
     private int stkSize;
     private int MAX_INSTRUCTION_LENGTH = 80;
@@ -40,6 +44,11 @@ public class Assembler {
         this.errorMessages = new ArrayList<>();
         this.instructionList = new ArrayList<>();
         this.outputArea = outputArea;
+        this.errorMessage = new ErrorMessage();
+        this.symbolsTables = new ArrayList<>();
+        this.definitionTables = new ArrayList<>();
+        this.usageTables = new ArrayList<>();
+        this.offset = new ArrayList<>();
 
         mnemonics.put("ADD",2);
         mnemonics.put("SUB",6);
@@ -68,7 +77,6 @@ public class Assembler {
     }
 
     public boolean mount(String filepath){
-        boolean start = false;
         stkSize = 0;
         try {
             File program = new File(filepath);
@@ -78,10 +86,9 @@ public class Assembler {
                 String instruction = fileReader.nextLine().trim();
                 String[] instructionParts = instruction.split("\\s+");
 
-                if (!validateInstruction(instruction.length(), instructionParts.length)) {
-                    outputArea.appendText(errorMessage.getErrorMessage(9));
-                    errorMessages.add("Erro: Instrução inválida na linha: " + instruction);
-                    continue;
+                if (!validateInstruction(instruction, instructionParts.length)) {
+                    fileReader.close();
+                    return false;
                 }
 
                 if (instructionParts.length == 0 || instructionParts[0].startsWith("*"))    // linha em branco ou comentário
@@ -94,9 +101,12 @@ public class Assembler {
                     if (!validateLabel(firstSymbol)){
                         outputArea.appendText(errorMessage.getErrorMessage(6));
                         errorMessages.add("Erro: Label inválido: " + firstSymbol);
-                        continue;
+                        fileReader.close();
+                        return false;
                     }
+
                     addNewSymbol(firstSymbol);
+
                     instructionStart = firstSymbol.length();
                 }
 
@@ -107,8 +117,10 @@ public class Assembler {
                     continue;
                 outputArea.appendText(errorMessage.getErrorMessage(9));
                 errorMessages.add("Erro: Instrução não reconhecida: " + instruction);
+                break;
             }
             fileReader.close();
+            secondeStep();
             writeOnOutputFile(filepath);
             printTables();
         } catch (FileNotFoundException e) {
@@ -201,60 +213,46 @@ public class Assembler {
         if (operation.equals("START")) {
             return true;
         }
+
         if (operation.equals("END")){
-            offset = PC;
+            symbolsTables.add((HashMap<String, Integer>) symbolsTable.clone());
+            definitionTables.add((HashMap<String, Integer>) definitionTable.clone());
+            usageTables.add((HashMap<String, Integer>) usageTable.clone());
+
+            symbolsTable.clear();
+            definitionTable.clear();
+            usageTable.clear();
+
+            offset.add(PC);
             PC=0;
             return true;
         }
 
         if (operation.equals("CONST")) {
             if (opIndex > 0){
-                String label = instructionParts[0];
                 String operand = instructionParts[opIndex+1];
 
-                if (definitionTable.containsKey(label)) {
-                    symbolsTable.remove(label);
-                    if (definitionTable.get(label) == -1)
-                        definitionTable.replace(label, PC);
-                    else {
-                        outputArea.appendText(errorMessage.getErrorMessage(7));
-                        errorMessages.add("Erro: Variável já inicializada: " + label);
-                        return false;
-                    }
-                }
+                if (operand.matches("\\d+"))
+                    instructionList.add(operand);
                 else
-                    addNewSymbol(label);
-                instructionList.add(operand);
+                    return false;
             }
             PC++;
             return true;
         }
+
         if (operation.equals("SPACE")){
-            if (opIndex > 0) {
-                String label = instructionParts[0];
-
-                if (definitionTable.containsKey(label)) {
-                    symbolsTable.remove(label);
-
-                    if (definitionTable.get(label) == -1)
-                        definitionTable.replace(label, PC);
-                    else {
-                        outputArea.appendText(errorMessage.getErrorMessage(7));
-                        errorMessages.add("Erro: Variável já inicializada: " + label);
-                        return false;
-                    }
-                }
-                else
-                    addNewSymbol(label);
-            }
-            instructionList.add("0");
+            if (opIndex > 0)
+                instructionList.add("0");
             PC++;
             return true;
         }
+
         if (operation.equals("INTDEF")){
             String label = instructionParts[opIndex+1];
             return intdef(label);
         }
+
         if (operation.equals("INTUSE")){
             if (opIndex > 0) {
                 String label = instructionParts[opIndex - 1];
@@ -262,6 +260,7 @@ public class Assembler {
             }
             return false;
         }
+
         if (operation.equals("STACK")){
             String operand = instructionParts[opIndex+1];
             stkSize = Integer.parseInt(operand);
@@ -300,16 +299,15 @@ public class Assembler {
 
         } catch (IOException e) {
             outputArea.appendText(errorMessage.getErrorMessage(13));
-            System.out.println("Erro ao escrever nos arquivos de saída.");
         }
     }
 
-    public boolean validateInstruction(int instructionLength, int numOfComponents){
-        if (instructionLength > MAX_INSTRUCTION_LENGTH)
+    public boolean validateInstruction(String instruction, int numOfComponents){
+        if ((instruction.length() > MAX_INSTRUCTION_LENGTH) || (numOfComponents > MAX_INSTRUCTION_ITEMS)){
+            outputArea.appendText(errorMessage.getErrorMessage(9));
+            errorMessages.add("Erro: Instrução inválida na linha: " + instruction);    
             return false;
-
-        if (numOfComponents > MAX_INSTRUCTION_ITEMS)
-            return false;
+        }
 
         return true;
     }
@@ -319,7 +317,6 @@ public class Assembler {
             return false;
         if (!Character.isLetter(label.charAt(0)))
             return false;
-
         return true;
     }
 
@@ -327,16 +324,51 @@ public class Assembler {
         return !mnemonics.containsKey(symbol) && !assemblerInstructions.containsKey(symbol);
     }
 
+    private boolean isDeclared(String label){
+        return definitionTable.containsKey(label) || usageTable.containsKey(label) || symbolsTable.containsKey(label);
+    }
+
     private boolean addNewSymbol(String label){
-        if (definitionTable.containsKey(label) || usageTable.containsKey(label))
+        if (definitionTable.containsKey(label)){
+            if (definitionTable.get(label) == -1)
+                definitionTable.replace(label, PC);
+            else {
+                outputArea.appendText(errorMessage.getErrorMessage(7));
+                errorMessages.add("Erro: Variável já inicializada: " + label);
+                return false;
+            }
             return true;
+        }
 
-        if (!symbolsTable.containsKey(label))
-            symbolsTable.put(label, PC);
-        else
-            return false;       // variavel já inicializada
-
+        if (usageTable.containsKey(label))
+            return true;
+            
+        if (symbolsTable.containsKey(label)){
+            if (symbolsTable.get(label) == -1)
+                symbolsTable.replace(label, PC);
+            else {
+                outputArea.appendText(errorMessage.getErrorMessage(7));
+                errorMessages.add("Erro: Variável já inicializada: " + label);
+                return false;
+            }
+            return true;
+        }
+        symbolsTable.put(label, PC);
         return true;
+    }
+
+    private void foundLabel(String label) {
+        if (!isDeclared(label))
+            symbolsTable.put(label, -1);
+        
+        if (!ocurrenceTable.containsKey(label)){
+            ArrayList<Integer> occurrences = new ArrayList<>();
+            occurrences.add(PC);
+
+            ocurrenceTable.put(label, occurrences);
+        } else {
+            ocurrenceTable.get(label).add(PC);
+        }
     }
 
     private boolean intuse(String label){
@@ -366,28 +398,83 @@ public class Assembler {
         return true;
     }
 
-    private void foundLabel(String label) {
-        if (!ocurrenceTable.containsKey(label)){
-            ArrayList<Integer> occurrences = new ArrayList<>();
-            occurrences.add(PC);
+    private HashMap<String, Integer> unifyDefinitionTables(){
+        int offset = 0;
+        int programIndex = 0;
 
-            ocurrenceTable.put(label, occurrences);
-        } else {
-            ocurrenceTable.get(label).add(PC);
+        HashMap<String, Integer> unifiedDefinitionTable = new HashMap<>();
+        for (HashMap<String, Integer> table: definitionTables){
+            for (String key: table.keySet()){
+                int address = table.get(key) + offset;
+                unifiedDefinitionTable.put(key, address);
+            }
+            offset = offset+this.offset.get(programIndex);
+            programIndex = programIndex + 1;
         }
+
+        return unifiedDefinitionTable;
+    }
+
+    private void secondeStep(){
+        ArrayList<String> objCode = new ArrayList<>();
+        int currentInstruction = 0;
+        int programIndex = 0;
+        int offset = 0;
+
+        for (String instruction: instructionList){
+            String[] instructionParts = instruction.split(" ");
+            String instructionCode = "";
+            HashMap<String, Integer> unifiedDefinitionTable = unifyDefinitionTables();
+
+            for (String code: instructionParts){
+                String address = code;
+
+                if (unifiedDefinitionTable.containsKey(code))
+                    address = Integer.toString(unifiedDefinitionTable.get(code));
+
+                if (symbolsTables.get(programIndex).containsKey(code))
+                    address = Integer.toString(symbolsTables.get(programIndex).get(code)+offset);
+
+                instructionCode = instructionCode.concat(address+" ");
+                currentInstruction++;
+            }
+        
+            if (currentInstruction == this.offset.get(programIndex)){
+                currentInstruction = 0;
+                offset = offset + this.offset.get(programIndex);
+                programIndex++;
+            }
+
+            objCode.add(instructionCode);
+        }
+
+        instructionList = objCode;
     }
 
     private void printTables(){
-        System.out.println("-----------------DT----------------------");
-        for (String key: definitionTable.keySet())
-            System.out.println(key+" "+definitionTable.get(key));
-        System.out.println("-----------------ST----------------------");
+        int segment = 0;
+        for (HashMap<String, Integer> table: definitionTables) {
+            System.out.println("-----------------DT"+segment+"----------------------");
+            for (String key : table.keySet())
+                System.out.println(key + " " + table.get(key));
+            segment++;
+        }
 
-        for (String key: symbolsTable.keySet())
-            System.out.println(key+" "+symbolsTable.get(key));
-        System.out.println("-----------------UT----------------------");
-        for (String key: usageTable.keySet())
-            System.out.println(key+" "+usageTable.get(key));
+        segment = 0;
+        for (HashMap<String, Integer> table: symbolsTables) {
+            System.out.println("-----------------ST"+segment+"----------------------");
+            for (String key : table.keySet())
+                System.out.println(key + " " + table.get(key));
+            segment++;
+        }
+
+        segment = 0;
+        for (HashMap<String, Integer> table: usageTables) {
+            System.out.println("-----------------UT"+segment+"----------------------");
+            for (String key : table.keySet())
+                System.out.println(key + " " + table.get(key));
+            segment++;
+        }
         System.out.println("---------------------------------------");
 
     }
