@@ -12,6 +12,18 @@ public class MacroProcessor {
 
     }
 
+
+//    public static void main(String[] args) {
+//        String inputFileName = "Código/src/main/java/com/emulador_caligaert/model/macro_processor/codigo_com_macros.asm";  // Nome do arquivo de entrada
+//        String outputFileName = "MASMAPRG.ASM";  // Nome do arquivo de saída
+//
+//        try {
+//            processMacros(inputFileName, outputFileName);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
     public String processMacros(String inputFileName) throws IOException {
         // Abre os arquivos de entrada e saída
         BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
