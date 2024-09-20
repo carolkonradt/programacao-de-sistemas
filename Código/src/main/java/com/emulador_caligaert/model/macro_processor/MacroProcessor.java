@@ -32,43 +32,46 @@ public class MacroProcessor {
                 continue; // pula a linha "MACRO"
             }
 
-            // A linha seguinte contém o nome da macro
-            if (insideMacro && macroName.isEmpty()) {
-                macroName = line;  // Define o nome da macro
-                System.out.println("Definindo macro: " + macroName); // Debug para verificar se a macro está sendo lida
-                continue;  // Passa para a próxima linha
-            }
-
             // Verifica se a linha contém o fim da definição de macro
             if (line.equals("MEND")) {
                 insideMacro = false;
-                // Armazena a macro definida no HashMap
                 macroDefinitions.put(macroName, new ArrayList<>(macroBody));
-                System.out.println("Macro armazenada: " + macroName + " com corpo: " + macroBody); // Debug
+                System.out.println(macroName);
                 macroBody.clear();
                 macroName = "";
-                continue;  // Pula a linha "MEND"
-            }
-
-            // Se estamos dentro de uma macro, armazena o corpo da macro
-            if (insideMacro) {
-                macroBody.add(line);  // Armazena as linhas do corpo da macro
-                System.out.println("Adicionando linha ao corpo da macro: " + line); // Debug
-                continue;
+                continue; // pula a linha "MEND"
             }
 
             // Se estamos dentro de uma macro, armazena seu corpo
-
+            if (insideMacro) {
+                if (macroName.isEmpty()) {
+                    // A primeira linha após "MACRO" é o nome da macro
+                    macroName = line.split(" ")[0];
+                    //System.out.println(macroName);
+                    continue;
+                } else {
+                    System.out.println(line);
+                    macroBody.add(line);
+                }
+                //continue; // pula as linhas dentro da definição da macro
+            }
 
             // Se a linha contém uma chamada de macro, expandimos ela
-            System.out.println(macroDefinitions);
             if (macroDefinitions.containsKey(line.split(" ")[0])) {
-                expandMacro(line, writer);
+                String macroNameExp = line.split(" ")[0];
+                List<String> macroBodyExp  = macroDefinitions.get(macroNameExp);
+
+                // Escreve o corpo da macro no arquivo de saída
+                for (String macroLine : macroBodyExp) {
+                    System.out.println("Escrevendo linha da macro " + macroName + ": " + macroLine);
+                    writer.write(macroLine);
+                    writer.newLine();}
             } else {
                 writer.write(line);
                 writer.newLine();
             }
         }
+
 
         // Fecha os leitores e escritores
         reader.close();
@@ -77,15 +80,22 @@ public class MacroProcessor {
         return new File("MASMAPRG.ASM").getAbsolutePath();
     }
 
-    private static void expandMacro(String line, BufferedWriter writer) throws IOException {
-        String macroName = line.split(" ")[0];
-        List<String> macroBody = macroDefinitions.get(macroName);
 
-        // Escreve o corpo da macro no arquivo de saída
-        for (String macroLine : macroBody) {
-            System.out.println("Escrevendo linha da macro " + macroName + ": " + macroLine);
-            writer.write(macroLine);
-            writer.newLine();
-        }
-    }
+    // Estava tendo problemas com o buffer pois sempre que era passado para a função eles
+//Sobreescrevia o arquivo de saída. Essa função ficou junto com a principal.
+// private static void expandMacro(String line, BufferedWriter writer) throws IOException {
+// String macroName = line.split(" ")[0];
+// List<String> macroBody = macroDefinitions.get(macroName);
+// System.out.println("TESTE");
+//
+// // Escreve o corpo da macro no arquivo de saída
+// for (String macroLine : macroBody) {
+// System.out.println("Escrevendo linha da macro " + macroName + ": " + macroLine);
+// writer.write(macroLine);
+// writer.newLine();
+// }
+// }
+
 }
+
+
