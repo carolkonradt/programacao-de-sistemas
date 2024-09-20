@@ -8,22 +8,14 @@ public class MacroProcessor {
     // Estrutura para armazenar as macros definidas
     private static Map<String, List<String>> macroDefinitions = new HashMap<>();
 
-    public static void main(String[] args) {
-        String inputFileName = "Código/src/main/java/com/emulador_caligaert/model/macro_processor/codigo_com_macros.asm";  // Nome do arquivo de entrada
-        String outputFileName = "MASMAPRG.ASM";  // Nome do arquivo de saída
+    public MacroProcessor(){
 
-        try {
-            processMacros(inputFileName, outputFileName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-
-    private static void processMacros(String inputFileName, String outputFileName) throws IOException {
+    public String processMacros(String inputFileName) throws IOException {
         // Abre os arquivos de entrada e saída
         BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(outputFileName));
+        BufferedWriter writer = new BufferedWriter(new FileWriter("MASMAPRG.ASM"));
 
         String line;
         boolean insideMacro = false;
@@ -81,6 +73,8 @@ public class MacroProcessor {
         // Fecha os leitores e escritores
         reader.close();
         writer.close();
+
+        return new File("MASMAPRG.ASM").getAbsolutePath();
     }
 
     private static void expandMacro(String line, BufferedWriter writer) throws IOException {
