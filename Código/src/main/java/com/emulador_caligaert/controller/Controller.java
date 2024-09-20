@@ -1,6 +1,7 @@
 package com.emulador_caligaert.controller;
 
 import com.emulador_caligaert.model.assembler.Assembler;
+import com.emulador_caligaert.model.macro_processor.MacroProcessor;
 import com.emulador_caligaert.model.virtual_machine.Machine;
 import com.emulador_caligaert.model.virtual_machine.Memory;
 import com.emulador_caligaert.model.virtual_machine.Register;
@@ -14,6 +15,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Stack;
@@ -121,16 +123,8 @@ public class Controller {
             return;
         }
 
-        // Chamar o montador para gerar o arquivo .lst
-        Assembler assembler = new Assembler(outputArea);
-        if (assembler.mount(filepath)) {
-            outputArea.appendText("Montagem completada com sucesso!\n");
-
-            // Exibir o conteúdo do arquivo .lst gerado
-            displayLstFile(filepath + ".lst");
-        } else {
-            outputArea.appendText("Erro durante a montagem. Verifique o arquivo.\n");
-        }
+        processMacro();
+        processAssembly();
 
         virtualMachine.restartMachine();
         virtualMachine.loadProgram(filepath);
@@ -218,5 +212,27 @@ public class Controller {
     // Configura o Stage para ser utilizado pelo FileChooser
     public void setStage(Stage stage) {
         this.stage = stage;
+    }
+
+    private void processMacro(){
+        MacroProcessor macroProcessor = new MacroProcessor();        
+        try {
+            filepath = macroProcessor.processMacros(filepath);     
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void processAssembly(){
+        // Chamar o montador para gerar o arquivo .lst
+        Assembler assembler = new Assembler(outputArea);
+        if (assembler.mount(filepath)) {
+            outputArea.appendText("Montagem completada com sucesso!\n");
+
+            // Exibir o conteúdo do arquivo .lst gerado
+            displayLstFile(filepath + ".lst");
+        } else {
+            outputArea.appendText("Erro durante a montagem. Verifique o arquivo.\n");
+        }
     }
 }
