@@ -29,6 +29,7 @@ public class Assembler {
     private int stkSize;
     private int MAX_INSTRUCTION_LENGTH = 80;
     private int MAX_INSTRUCTION_ITEMS = 5;
+    private boolean started = false;
     private ArrayList<String> errorMessages;
     private ArrayList<String> instructionList;       // Montado
     private ArrayList<String> originalList;          // Original
@@ -117,12 +118,13 @@ public class Assembler {
 
                 if (handleAssemblerInstruction(instruction, instructionStart))
                     continue;
-                outputArea.appendText(errorMessage.getErrorMessage(9));
-                errorMessages.add("Erro: Instrução não reconhecida: " + instruction);
+                    
+                originalList.add(instruction);
+                restartTables();
                 break;
             }
             fileReader.close();
-            secondeStep();
+            secondStep();
             writeOnOutputFile(filepath);
             printTables();
         } catch (FileNotFoundException e) {
@@ -205,7 +207,14 @@ public class Assembler {
         if (instructionStart != 0)
             opIndex = 1;
         String operation = instructionParts[opIndex];
-        int requiredElements = assemblerInstructions.get(operation);
+        int requiredElements = 0;
+        try{
+            requiredElements = assemblerInstructions.get(operation);
+        } catch (Exception e){
+            outputArea.appendText(errorMessage.getErrorMessage(9));
+            errorMessages.add("Erro: Instrução não reconhecida: " + instruction);
+            return false;
+        }
 
         if (numOfElements != requiredElements) {
             outputArea.appendText(errorMessage.getErrorMessage(6));
@@ -214,20 +223,20 @@ public class Assembler {
         }
 
         if (operation.equals("START")) {
+            if (started == true){
+                outputArea.appendText(errorMessage.getErrorMessage(10));
+                errorMessages.add("Erro: Não há diretiva END antes de: " + instruction);
+                return false;
+            }
+
+            started = true;
+
             return true;
         }
 
         if (operation.equals("END")){
-            symbolsTables.add((HashMap<String, Integer>) symbolsTable.clone());
-            definitionTables.add((HashMap<String, Integer>) definitionTable.clone());
-            usageTables.add((HashMap<String, Integer>) usageTable.clone());
-
-            symbolsTable.clear();
-            definitionTable.clear();
-            usageTable.clear();
-
-            offset.add(PC);
-            PC=0;
+            restartTables();
+            started = false;
             return true;
         }
 
@@ -238,9 +247,11 @@ public class Assembler {
                 if (operand.matches("\\d+")){
                     instructionList.add(operand);
                     originalList.add(instruction);
-                }
-                else
+                } else {
+                    outputArea.appendText(errorMessage.getErrorMessage(3));
+                    errorMessages.add("Erro: Operando Inválido: " + operand);
                     return false;
+                }
             }
             PC++;
             return true;
@@ -273,7 +284,21 @@ public class Assembler {
             stkSize = Integer.parseInt(operand);
             return true;
         }
+        
         return false;
+    }
+
+    private void restartTables(){
+        symbolsTables.add((HashMap<String, Integer>) symbolsTable.clone());
+        definitionTables.add((HashMap<String, Integer>) definitionTable.clone());
+        usageTables.add((HashMap<String, Integer>) usageTable.clone());
+
+        symbolsTable.clear();
+        definitionTable.clear();
+        usageTable.clear();
+
+        offset.add(PC);
+        PC=0;
     }
 
     private void writeOnOutputFile(String filepath) {
@@ -381,9 +406,11 @@ public class Assembler {
     }
 
     private boolean intuse(String label){
-        if (usageTable.containsKey(label))
-            return false;   // variável já definida
-
+        if (usageTable.containsKey(label)){
+            outputArea.appendText(errorMessage.getErrorMessage(7));
+            errorMessages.add("Erro: Variável já inicializada: " + label);
+            return false; 
+        }
         symbolsTable.remove(label);
         usageTable.put(label, -1);
         return true;
@@ -392,8 +419,11 @@ public class Assembler {
     private boolean intdef(String label){
         int operand;
 
-        if (definitionTable.containsKey(label))
-            return false;   // variável já definida
+        if (definitionTable.containsKey(label)){
+            outputArea.appendText(errorMessage.getErrorMessage(7));
+            errorMessages.add("Erro: Variável já inicializada: " + label);
+            return false; 
+        }
 
         if (symbolsTable.containsKey(label)){
             operand = symbolsTable.get(label);
@@ -424,7 +454,7 @@ public class Assembler {
         return unifiedDefinitionTable;
     }
 
-    private void secondeStep(){
+    private void secondStep(){
         ArrayList<String> objCode = new ArrayList<>();
         int currentInstruction = 0;
         int programIndex = 0;
