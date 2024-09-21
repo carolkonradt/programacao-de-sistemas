@@ -12,18 +12,6 @@ public class MacroProcessor {
 
     }
 
-
-//    public static void main(String[] args) {
-//        String inputFileName = "Código/src/main/java/com/emulador_caligaert/model/macro_processor/codigo_com_macros.asm";  // Nome do arquivo de entrada
-//        String outputFileName = "MASMAPRG.ASM";  // Nome do arquivo de saída
-//
-//        try {
-//            processMacros(inputFileName, outputFileName);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
     public String processMacros(String inputFileName) throws IOException {
         // Abre os arquivos de entrada e saída
         BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
@@ -33,6 +21,14 @@ public class MacroProcessor {
         boolean insideMacro = false;
         List<String> macroBody = new ArrayList<>();
         String macroName = "";
+        boolean flagNewMacro = false;
+        //String currentMacro;
+
+        // Pilha para controlar a definição de macros aninhadas
+        Stack<String> macroDefinitionStack = new Stack<>();
+
+        // Pilha para controlar a definição de macros aninhadas
+        Stack<String> macroCallStack = new Stack<>();
 
         // Processa linha por linha
         while ((line = reader.readLine()) != null) {
@@ -41,33 +37,70 @@ public class MacroProcessor {
             // Verifica se a linha contém uma definição de macro
             if (line.startsWith("MACRO")) {
                 insideMacro = true;
+                flagNewMacro = true;
                 continue; // pula a linha "MACRO"
             }
 
             // Verifica se a linha contém o fim da definição de macro
             if (line.equals("MEND")) {
+                macroDefinitionStack.pop();
+                if(macroDefinitionStack.empty()){
+                    insideMacro = false;
+                }
+
+                macroBody.clear();
+                macroName = "";
+                continue;
+
+                /* 
                 insideMacro = false;
                 macroDefinitions.put(macroName, new ArrayList<>(macroBody));
                 System.out.println(macroName);
                 macroBody.clear();
                 macroName = "";
                 continue; // pula a linha "MEND"
+                */
             }
 
             // Se estamos dentro de uma macro, armazena seu corpo
             if (insideMacro) {
-                if (macroName.isEmpty()) {
+                if (flagNewMacro) {
                     // A primeira linha após "MACRO" é o nome da macro
                     macroName = line.split(" ")[0];
-                    //System.out.println(macroName);
+                    macroDefinitions.put(macroName, new ArrayList<>());
+                    macroDefinitionStack.push(macroName);
+                    flagNewMacro = false;
                     continue;
                 } else {
+                    for(String key: macroDefinitionStack){
+                        macroBody = macroDefinitions.get(key);
+                        macroBody.add(line);
+                    }
+                        /* 
                     System.out.println(line);
                     macroBody.add(line);
+                    */
                 }
                 //continue; // pula as linhas dentro da definição da macro
-            }
+            } else {
+                // Se a linha contém uma chamada de macro, expandimos ela
+                if (macroDefinitions.containsKey(line.split(" ")[0])) {
+                    String macroNameExp = line.split(" ")[0];
+                    List<String> macroBodyExp  = macroDefinitions.get(macroNameExp);
 
+                    // Escreve o corpo da macro no arquivo de saída
+                    for (String macroLine : macroBodyExp) {
+                        System.out.println("Escrevendo linha da macro " + macroName + ": " + macroLine);
+                        writer.write(macroLine);
+                        writer.newLine();
+                    }
+                } else {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }           
+ 
+            /*
             // Se a linha contém uma chamada de macro, expandimos ela
             if (macroDefinitions.containsKey(line.split(" ")[0])) {
                 String macroNameExp = line.split(" ")[0];
@@ -77,11 +110,13 @@ public class MacroProcessor {
                 for (String macroLine : macroBodyExp) {
                     System.out.println("Escrevendo linha da macro " + macroName + ": " + macroLine);
                     writer.write(macroLine);
-                    writer.newLine();}
+                    writer.newLine();
+                }
             } else {
                 writer.write(line);
                 writer.newLine();
-            }
+            }*/
+            
         }
 
 
