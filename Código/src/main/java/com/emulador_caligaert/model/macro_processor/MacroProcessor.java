@@ -7,15 +7,28 @@ public class MacroProcessor {
 
     // Estrutura para armazenar as macros definidas
     private static Map<String, List<String>> macroDefinitions = new HashMap<>();
-
+    private static Map<String, LinkedList<String>> prototypes = new HashMap<>();
+    private static BufferedReader reader;
+    private static BufferedWriter writer;
+    
     public MacroProcessor(){
+        
+    }
+    public static void main(String[] args) {
+        String inputFileName = "/home/rboeira/Área de trabalho/PS/vs/emulador_caligaert/teste.txt";  // Nome do arquivo de entrada
+        String outputFileName = "MASMAPRG.ASM";  // Nome do arquivo de saída
 
+        try {
+            processMacros(inputFileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public String processMacros(String inputFileName) throws IOException {
+    public static String processMacros(String inputFileName) throws IOException {
         // Abre os arquivos de entrada e saída
-        BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
-        BufferedWriter writer = new BufferedWriter(new FileWriter("MASMAPRG.ASM"));
+        reader = new BufferedReader(new FileReader(inputFileName));
+        writer = new BufferedWriter(new FileWriter("MASMAPRG.ASM"));
 
         String line;
         boolean insideMacro = false;
@@ -49,6 +62,10 @@ public class MacroProcessor {
                         if (flagNewMacro) {
                             // A primeira linha após "MACRO" é o nome da macro
                             macroName = line.split(" ")[0];
+                            LinkedList<String> formalParameters = getParameters(line);
+
+                            prototypes.put(macroName, formalParameters);
+                            
                             macroDefinitions.put(macroName, new ArrayList<>());
                             macroDefinitionStack.push(macroName);
                             flagNewMacro = false;
@@ -62,15 +79,8 @@ public class MacroProcessor {
                     } else {
                             // Se a linha contém uma chamada de macro, expandimos ela
                         if (macroDefinitions.containsKey(line.split(" ")[0])) {
-                            String macroNameExp = line.split(" ")[0];
-                            List<String> macroBodyExp  = macroDefinitions.get(macroNameExp);
-
-                            // Escreve o corpo da macro no arquivo de saída
-                            for (String macroLine : macroBodyExp) {
-                                System.out.println("Escrevendo linha da macro " + macroName + ": " + macroLine);
-                                writer.write(macroLine);
-                                writer.newLine();
-                            }
+                            HashMap<String, LinkedList<String>> globalParameters = new HashMap<>();
+                            expandMacro(line, globalParameters);
                         } else {
                             writer.write(line);
                             writer.newLine();
@@ -88,6 +98,78 @@ public class MacroProcessor {
         writer.close();
 
         return new File("MASMAPRG.ASM").getAbsolutePath();
+    }
+
+    public static void expandMacro(String line, HashMap<String, LinkedList<String>> globalParameters) throws IOException{
+        String macroNameExp = line.split(" ")[0];
+        List<String> macroBodyExp  = macroDefinitions.get(macroNameExp);
+        // relaciona o parâmetro formal (do protótipo) com o real (da chamada)
+        HashMap<String, String> link = matchParameters(line);
+
+        // empilha o parâmetro real na pilha do parâmetro formal correspondente
+        for (String formalParameter: link.keySet()){
+            if (globalParameters.containsKey(formalParameter)){
+                String realParameter = link.get(formalParameter);
+
+                globalParameters.get(formalParameter).add(realParameter);
+                continue;
+            }
+            LinkedList<String> realParameter = new LinkedList<>();
+            realParameter.add(link.get(formalParameter));
+            globalParameters.put(formalParameter, realParameter);
+        }
+        System.out.println(globalParameters);
+
+        // Escreve o corpo da macro no arquivo de saída
+        for (String macroLine : macroBodyExp) {
+            // substitui os parâmetros formais pelos reais
+            macroLine = replaceRealParameters(macroLine, globalParameters);
+            String[] instructionParts = macroLine.split(" ");
+            String firstSymbol = instructionParts[0];
+            System.out.println(macroLine);
+
+            if (macroDefinitions.containsKey(firstSymbol))
+                expandMacro(macroLine, (HashMap<String, LinkedList<String>>) globalParameters.clone());
+            else{     
+                writer.write(macroLine);
+                writer.newLine();   
+            }
+        }        
+    }
+
+    public static String replaceRealParameters(String line, HashMap<String, LinkedList<String>> globalParameters){
+        String macroLine = line.split(" ")[0];
+        String[] instructionParts = line.split(" ");
+
+        for (int i=1; i<instructionParts.length; i++){
+            String parameter;    
+            if (globalParameters.containsKey(instructionParts[i]))
+                parameter = globalParameters.get(instructionParts[i]).getLast();
+            else
+                parameter = instructionParts[i];
+            macroLine = macroLine + " " + parameter;
+        }
+
+        return macroLine;
+    }
+
+    public static LinkedList<String> getParameters(String line){
+        String[] instructionParts = line.split(" ");
+        LinkedList<String> parameters = new LinkedList<>();
+
+        for (int i=1; i<instructionParts.length; i++)
+            parameters.add(instructionParts[i]);
+
+        return parameters;
+    }
+
+    public static HashMap<String, String> matchParameters(String line){
+        HashMap<String, String> link = new HashMap<>();
+        String[] instructionParts = line.split(" ");
+        LinkedList<String> formalParameters = prototypes.get(instructionParts[0]);
+        for (int i=1; i<instructionParts.length; i++)
+            link.put(formalParameters.get(i-1), instructionParts[i]);
+        return link;
     }
 }
 
