@@ -35,6 +35,17 @@ public class Main extends Application {
         primaryStage.setTitle("Simple CPU Interface");
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        // Processamento de macros
+        // Montagem dos módulos
+        List<Module> modules = montarModulos();
+
+        // Ligação
+        Linker linker = new Linker(modules);
+        linker.primeiraPassagem();
+        linker.segundaPassagem();
+
+        // Execução na máquina virtual
     }
 
    
