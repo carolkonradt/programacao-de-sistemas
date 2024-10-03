@@ -1,5 +1,6 @@
 package com.emulador_caligaert.model.assembler;
 
+import com.emulador_caligaert.model.tables.Tables;
 import com.emulador_caligaert.model.virtual_machine.ErrorMessage;
 import javafx.scene.control.TextArea;
 
@@ -14,10 +15,14 @@ import java.util.Scanner;
 public class Assembler {
     private HashMap<String, Integer> mnemonics;
     private HashMap<String, Integer> assemblerInstructions;
-
+    
+    /*
     private ArrayList<HashMap<String, Integer>> symbolsTables;
     private ArrayList<HashMap<String, Integer>> definitionTables;
     private ArrayList<HashMap<String, Integer>> usageTables;
+    */
+
+    Tables tables;
 
     private HashMap<String, Integer> symbolsTable;
     private HashMap<String, Integer> definitionTable;
@@ -48,9 +53,12 @@ public class Assembler {
         this.originalList = new ArrayList<>();         // Inicializando para armazenar o original
         this.outputArea = outputArea;
         this.errorMessage = new ErrorMessage();
-        this.symbolsTables = new ArrayList<>();
-        this.definitionTables = new ArrayList<>();
-        this.usageTables = new ArrayList<>();
+        //this.symbolsTables = new ArrayList<>();
+        //this.definitionTables = new ArrayList<>();
+        //this.usageTables = new ArrayList<>();
+    
+        tables = new Tables();
+
         this.offset = new ArrayList<>();
 
         mnemonics.put("ADD",2);
@@ -124,7 +132,7 @@ public class Assembler {
                 break;
             }
             fileReader.close();
-            secondStep();
+            //secondStep();
             writeOnOutputFile(filepath);
             printTables();
         } catch (FileNotFoundException e) {
@@ -289,9 +297,13 @@ public class Assembler {
     }
 
     private void restartTables(){
+        /*
         symbolsTables.add((HashMap<String, Integer>) symbolsTable.clone());
         definitionTables.add((HashMap<String, Integer>) definitionTable.clone());
-        usageTables.add((HashMap<String, Integer>) usageTable.clone());
+        usageTables.add((HashMap<String, Integer>) usageTable.clone());*/
+        tables.addSymbolTable(symbolsTable);
+        tables.addDefinitionTable(definitionTable);
+        tables.addUsageTable(usageTable);
 
         symbolsTable.clear();
         definitionTable.clear();
@@ -436,7 +448,8 @@ public class Assembler {
         definitionTable.put(label, -1);
         return true;
     }
-
+    /*
+//////////////////////////////////
     private HashMap<String, Integer> unifyDefinitionTables(){
         int offset = 0;
         int programIndex = 0;
@@ -453,7 +466,7 @@ public class Assembler {
 
         return unifiedDefinitionTable;
     }
-
+/////////////////////////////////
     private void secondStep(){
         ArrayList<String> objCode = new ArrayList<>();
         int currentInstruction = 0;
@@ -488,10 +501,12 @@ public class Assembler {
         }
 
         instructionList = objCode;
-    }
+    }*/
 
     private void printTables(){
         int segment = 0;
+
+        ArrayList<HashMap<String, Integer>> definitionTables = tables.getAllDefinitionTables();
         for (HashMap<String, Integer> table: definitionTables) {
             System.out.println("-----------------DT"+segment+"----------------------");
             for (String key : table.keySet())
@@ -500,6 +515,7 @@ public class Assembler {
         }
 
         segment = 0;
+        ArrayList<HashMap<String, Integer>> symbolsTables = tables.getAllSymbolsTables();
         for (HashMap<String, Integer> table: symbolsTables) {
             System.out.println("-----------------ST"+segment+"----------------------");
             for (String key : table.keySet())
@@ -508,6 +524,7 @@ public class Assembler {
         }
 
         segment = 0;
+        ArrayList<HashMap<String, Integer>> usageTables = tables.getAllUsageTables();
         for (HashMap<String, Integer> table: usageTables) {
             System.out.println("-----------------UT"+segment+"----------------------");
             for (String key : table.keySet())

@@ -1,6 +1,7 @@
 package com.emulador_caligaert.model.main;
 
 import java.io.IOException;
+import java.util.List;
 
 //import com.emulador_caligaert.virtual_machine.Machine;
 
@@ -30,23 +31,5 @@ public class Main extends Application {
         
         // Cria a cena com o layout carregado do FXML
         Scene scene = new Scene(root);
-
-        // Configura o Stage
-        primaryStage.setTitle("Simple CPU Interface");
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-        // Processamento de macros
-        // Montagem dos módulos
-        List<Module> modules = montarModulos();
-
-        // Ligação
-        Linker linker = new Linker(modules);
-        linker.primeiraPassagem();
-        linker.segundaPassagem();
-
-        // Execução na máquina virtual
     }
-
-   
 }
