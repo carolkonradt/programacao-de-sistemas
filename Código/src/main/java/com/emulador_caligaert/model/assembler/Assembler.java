@@ -1,5 +1,6 @@
 package com.emulador_caligaert.model.assembler;
 
+import com.emulador_caligaert.model.linker.Linker;
 import com.emulador_caligaert.model.tables.Tables;
 import com.emulador_caligaert.model.virtual_machine.ErrorMessage;
 import javafx.scene.control.TextArea;
@@ -23,6 +24,7 @@ public class Assembler {
     */
 
     Tables tables;
+    Linker linker;
 
     private HashMap<String, Integer> symbolsTable;
     private HashMap<String, Integer> definitionTable;
@@ -57,7 +59,7 @@ public class Assembler {
         //this.definitionTables = new ArrayList<>();
         //this.usageTables = new ArrayList<>();
     
-        tables = new Tables();
+        this.tables = new Tables();
 
         this.offset = new ArrayList<>();
 
@@ -202,6 +204,7 @@ public class Assembler {
             instructionCode = opCode + " " + operands;
             instructionList.add(instructionCode);  // Adicionando instrução montada
             originalList.add(instruction);
+            this.linker = new Linker(tables);
             return true;
         }
         return false;
@@ -301,9 +304,9 @@ public class Assembler {
         symbolsTables.add((HashMap<String, Integer>) symbolsTable.clone());
         definitionTables.add((HashMap<String, Integer>) definitionTable.clone());
         usageTables.add((HashMap<String, Integer>) usageTable.clone());*/
-        tables.addSymbolTable(symbolsTable);
-        tables.addDefinitionTable(definitionTable);
-        tables.addUsageTable(usageTable);
+        tables.addSymbolTable((HashMap<String, Integer>) symbolsTable.clone());
+        tables.addDefinitionTable((HashMap<String, Integer>) definitionTable.clone());
+        tables.addUsageTable((HashMap<String, Integer>) usageTable.clone());
 
         symbolsTable.clear();
         definitionTable.clear();
@@ -315,8 +318,11 @@ public class Assembler {
 
     private void writeOnOutputFile(String filepath) {
         try {
-            FileWriter objFileWriter = new FileWriter(filepath + ".obj");
-            FileWriter lstFileWriter = new FileWriter(filepath + ".lst");
+            int index = filepath.lastIndexOf(".");
+            String outputFileName = filepath.substring(0, index);
+
+            FileWriter objFileWriter = new FileWriter(outputFileName + ".obj");
+            FileWriter lstFileWriter = new FileWriter(outputFileName + ".lst");
 
             // Escreve o código objeto (.OBJ)
             for (String line : instructionList) {
