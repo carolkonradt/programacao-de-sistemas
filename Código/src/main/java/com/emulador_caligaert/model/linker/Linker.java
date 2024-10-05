@@ -1,29 +1,83 @@
 package com.emulador_caligaert.model.linker;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import com.emulador_caligaert.model.tables.Tables;
 
 public class Linker {
     Tables tables;
 
-    public Linker(String [] files){
-        if(files == null || files.length == 0){
-
-        } else {
-            this.tables = new Tables();
-
-        }
+    public Linker(Tables tables){
+        this.tables = tables;
     }
-
   
-    private void secondStep(ArrayList<String> instructionList, ArrayList<Integer> offsetList){
-        ArrayList<String> objCode = new ArrayList<>();
+    public boolean linkPrograms(LinkedList<String> files, String outputPath) throws IOException{
+        ArrayList<Integer> offsetList = tables.getOffset();
+        
         int currentInstruction = 0;
         int programIndex = 0;
         int offset = 0;
+        System.out.println(offset);
 
+        BufferedWriter objWriter = new BufferedWriter(new FileWriter(outputPath));
+        BufferedReader objReader;
+
+        for (String filepath: files){
+            try{
+                File program = new File(filepath);
+                String instruction;
+                System.out.println(filepath);
+                
+                objReader = new BufferedReader(new FileReader(program));
+                HashMap<String, Integer> unifiedDefinitionTable = unifyDefinitionTables(offsetList);
+                System.out.println(unifiedDefinitionTable);
+
+                while ((instruction = objReader.readLine()) != null){
+                    String[] instructionParts = instruction.split(" ");
+                    String instructionCode = "";
+                    
+                    for (String code: instructionParts){
+                        String address = code;
+        
+                        if (unifiedDefinitionTable.containsKey(code))
+                            address = Integer.toString(unifiedDefinitionTable.get(code));
+        
+                        //if (symbolsTables.get(programIndex).containsKey(code))
+                        if (tables.symbolExistsInTable(programIndex, code)){
+                            address = Integer.toString(tables.getSymbolFromTable(programIndex, code) + offset);
+                            System.out.println(programIndex+" prog " + code);
+                        }
+        
+                        instructionCode = instructionCode.concat(address+" ");
+                        currentInstruction++;
+                    }
+
+                    if (currentInstruction == offsetList.get(programIndex)){
+                        currentInstruction = 0;
+                        offset = offset + offsetList.get(programIndex);
+                        programIndex++;
+                    }
+        
+                    objWriter.write(instructionCode);
+                    objWriter.newLine();
+                }
+                objReader.close();
+            } catch (Exception e){
+                return false;
+            }
+        }
+        objWriter.close();
+        return true;
+    }
+        /* 
         for (String instruction: instructionList){
             String[] instructionParts = instruction.split(" ");
             String instructionCode = "";
@@ -52,8 +106,7 @@ public class Linker {
             objCode.add(instructionCode);
         }
 
-        instructionList = objCode;
-    }
+        instructionList = objCode;*/
 
 
     private HashMap<String, Integer> unifyDefinitionTables(ArrayList<Integer> offsetList){
