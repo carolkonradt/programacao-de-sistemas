@@ -102,6 +102,20 @@ public class Controller {
      * Método que abre a seleção do arquivo a ser carregado
      * na máquina virtual através do JavaFX
      */
+
+    private String saveFile(){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Selecione um Arquivo");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Decimal Files", "*.hex")
+        );
+
+        // Mostrar o diálogo de seleção de arquivos
+        File file = fileChooser.showSaveDialog(stage);
+
+        return file.getAbsolutePath();
+    }
+
     private void selectFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Selecione um Arquivo");
@@ -117,6 +131,7 @@ public class Controller {
             for (File selectedFile: selectedFiles)
                 outputArea.appendText("Arquivo selecionado: " + selectedFile.getAbsolutePath() + "\n");
             fileAvailable = true;
+            output.clear();
         }
     }
 
@@ -134,7 +149,9 @@ public class Controller {
             return;
         if (!runAssembler())
             return;
-        if (!runLinker())
+
+        String outputPath = saveFile();
+        if (!runLinker(outputPath))
             return;
         
         /* 
@@ -234,7 +251,8 @@ public class Controller {
         for (File file: selectedFiles){
             try {
                 String filepath = macroProcessor.processMacros(file.getAbsolutePath());   
-                output.add(filepath);  
+                System.out.println(filepath + " macro");
+                output.addFirst(filepath);  
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
@@ -248,6 +266,7 @@ public class Controller {
         assembler = new Assembler(outputArea);
         LinkedList<String> asmOutput = new LinkedList<>();
         for (String filepath: output){
+            System.out.println(filepath+" assembler");
             int index = filepath.lastIndexOf(".");
             String outputFileName = filepath.substring(0, index) + ".obj";
             asmOutput.add(outputFileName);
@@ -264,7 +283,16 @@ public class Controller {
         return true;
     }
 
-    private boolean runLinker(){
-        return true;
+    private boolean runLinker(String outputPath){
+        Linker linker = new Linker(assembler.getLinkerInfo());
+        boolean wasLinked = false;
+
+        try{
+            wasLinked = linker.linkPrograms(output, outputPath);
+        } catch (Exception e){
+            wasLinked = false;
+            outputArea.appendText("Não foi possível abrir algum dos arquivos!");
+        }
+        return wasLinked;
     }
 }
