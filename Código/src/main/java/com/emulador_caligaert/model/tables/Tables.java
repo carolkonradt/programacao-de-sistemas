@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Tables {
-    private static ArrayList<HashMap<String, Integer>> symbolsTables = new ArrayList<>();
-    private static ArrayList<HashMap<String, Integer>> definitionTables = new ArrayList<>();
-    private static ArrayList<HashMap<String, Integer>> usageTables = new ArrayList<>();
+    private ArrayList<HashMap<String, Integer>> symbolsTables = new ArrayList<>();
+    private ArrayList<HashMap<String, Integer>> definitionTables = new ArrayList<>();
+    private ArrayList<HashMap<String, Integer>> usageTables = new ArrayList<>();
+    private ArrayList<Integer> offsetList;
 
     public Tables(){
 
@@ -49,7 +50,7 @@ public class Tables {
     }
 
     // Método para pegar um elemento específico na tabela de definições
-    public static Integer getDefinitionFromTable(int tableIndex, String key) {
+    public Integer getDefinitionFromTable(int tableIndex, String key) {
         if (tableIndex >= 0 && tableIndex < definitionTables.size()) {
             return definitionTables.get(tableIndex).get(key);
         }
@@ -77,5 +78,14 @@ public class Tables {
 
     public ArrayList<HashMap<String, Integer>> getAllUsageTables() {
         return new ArrayList<>(usageTables); // Return a copy
+    }
+
+    /*-------------------- offsetList --------------------- */
+    public void setOffset(ArrayList<Integer> offsetList){
+        this.offsetList = offsetList;
+    }
+    
+    public ArrayList<Integer> getOffset(){
+        return this.offsetList;
     }
 }
