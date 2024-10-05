@@ -18,8 +18,11 @@ public class MacroProcessor {
 
     public String processMacros(String inputFileName) throws IOException {
         // Abre os arquivos de entrada e saída
+        int index = inputFileName.lastIndexOf(".");
+        String outputFileName = inputFileName.substring(0, index) + ".asm";
+
         reader = new BufferedReader(new FileReader(inputFileName));
-        writer = new BufferedWriter(new FileWriter("MASMAPRG.ASM"));
+        writer = new BufferedWriter(new FileWriter(outputFileName));
         
         String line;
         // Pilha para controlar a definição de macros aninhadas
@@ -35,7 +38,7 @@ public class MacroProcessor {
         reader.close();
         writer.close();
 
-        return new File("MASMAPRG.ASM").getAbsolutePath();
+        return new File(outputFileName).getAbsolutePath();
     }
 
     private void definingMacro(String macroName, String line){
