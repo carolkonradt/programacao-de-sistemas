@@ -113,6 +113,7 @@ public class Assembler {
                 if (isLabel(firstSymbol)){
                     if (!validateLabel(firstSymbol)){
                         outputArea.appendText(errorMessage.getErrorMessage(6));
+                        System.out.println(instruction+ " mn");
                         errorMessages.add("Erro: Label inválido: " + firstSymbol);
                         fileReader.close();
                         return false;
@@ -135,8 +136,12 @@ public class Assembler {
             }
             fileReader.close();
             //secondStep();
+            tables.setOffset(offset);
             writeOnOutputFile(filepath);
             printTables();
+            instructionList.clear();
+            originalList.clear();
+            errorMessages.clear();
         } catch (FileNotFoundException e) {
             outputArea.appendText(errorMessage.getErrorMessage(11));
             errorMessages.add("Erro: Arquivo não encontrado.");
@@ -194,6 +199,7 @@ public class Assembler {
                 if (isLabel(operand)) {
                     if (!validateLabel(operand)){
                         outputArea.appendText(errorMessage.getErrorMessage(6));
+                        System.out.println(instruction+ " hm");
                         errorMessages.add("Erro: Label inválido: " + operand);
                         return false;
                     }
@@ -229,6 +235,7 @@ public class Assembler {
 
         if (numOfElements != requiredElements) {
             outputArea.appendText(errorMessage.getErrorMessage(6));
+            System.out.println(instruction + " ha");
             errorMessages.add("Erro: Número inválido de elementos para operação: " + operation);
             return false;
         }
@@ -539,5 +546,9 @@ public class Assembler {
         }
         System.out.println("---------------------------------------");
 
+    }
+
+    public Tables getLinkerInfo(){
+        return tables;
     }
 }
