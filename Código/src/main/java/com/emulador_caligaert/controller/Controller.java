@@ -3,7 +3,6 @@ package com.emulador_caligaert.controller;
 import com.emulador_caligaert.model.assembler.Assembler;
 import com.emulador_caligaert.model.linker.Linker;
 import com.emulador_caligaert.model.macro_processor.MacroProcessor;
-import com.emulador_caligaert.model.tables.Tables;
 import com.emulador_caligaert.model.virtual_machine.Machine;
 import com.emulador_caligaert.model.virtual_machine.Memory;
 import com.emulador_caligaert.model.virtual_machine.Register;
@@ -20,7 +19,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
-import java.util.Stack;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -30,10 +28,13 @@ import java.util.LinkedList;
 public class Controller {
 
     private boolean fileAvailable = false;
+    private boolean loaded = false;
     private Machine virtualMachine;
     private Assembler assembler;
     private MacroProcessor macroProcessor;
 
+    @FXML
+    private ComboBox<String> cbSelector;
     @FXML
     private TextField pcField, spField, accField, mopField, riField, reField;
 
@@ -54,7 +55,14 @@ public class Controller {
 
     private Stage stage;
     private List<File> selectedFiles;
-    private LinkedList<String> output = new LinkedList<>();
+    private LinkedList<String> input = new LinkedList<>();
+    private LinkedList<String> macroOutput = new LinkedList<>();
+    private LinkedList<String> asmOutput = new LinkedList<>();
+
+    String outputPath = "";
+    String lastMainProject = "";
+
+    private boolean clicked = false;        // variável pra impedir spam de clique em botões
 
     /**
      * Neste método estão relacionadas todas as ações para botões
@@ -62,13 +70,13 @@ public class Controller {
      */
     @FXML
     public void initialize() {
-        virtualMachine = new Machine(1, 10, outputArea);
+        virtualMachine = new Machine(1, 16, outputArea);
 
         clearButton.setOnAction(e -> outputArea.clear());
         resetButton.setOnAction(e -> resetFields());  // Botão de reset configurado corretamente
         fileButton.setOnAction(e -> selectFile());
         runButton.setOnAction(e -> run());
-        //stepButton.setOnAction(e -> step());
+        stepButton.setOnAction(e -> step());
     }
 
     /**
@@ -88,6 +96,15 @@ public class Controller {
         mopField.clear();
         riField.clear();
         reField.clear();
+        cbSelector.getItems().clear();
+
+        fileAvailable = false;
+        input.clear();
+        macroOutput.clear();
+        asmOutput.clear();
+        lastMainProject = "";
+        loaded = false;
+        clicked = false;
 
         // Limpa as listas de memória e pilha
         memoriaList.setItems(FXCollections.observableArrayList());
@@ -112,11 +129,16 @@ public class Controller {
 
         // Mostrar o diálogo de seleção de arquivos
         File file = fileChooser.showSaveDialog(stage);
+        if (file == null)
+            return null;
 
         return file.getAbsolutePath();
     }
 
     private void selectFile() {
+        if (clicked)
+            return;
+        clicked = true;
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Selecione um Arquivo");
         fileChooser.getExtensionFilters().addAll(
@@ -128,43 +150,92 @@ public class Controller {
         selectedFiles = fileChooser.showOpenMultipleDialog(stage);
 
         if (selectedFiles != null) {
+            input.clear();
+            macroOutput.clear();
+            asmOutput.clear();
+            virtualMachine.restartMachine();
+            virtualMachine.setMOP(0);
             for (File selectedFile: selectedFiles)
                 outputArea.appendText("Arquivo selecionado: " + selectedFile.getAbsolutePath() + "\n");
             fileAvailable = true;
-            output.clear();
+            refreshComboBox();
+            loaded = false;
+        } else {
+            fileAvailable = false;
         }
+        clicked = false;
+        
+    }
+
+    private void refreshComboBox(){
+        cbSelector.getItems().clear();
+        for (File file: selectedFiles){
+            cbSelector.getItems().add(file.getName());
+            input.add(file.getAbsolutePath());
+        }
+        cbSelector.getSelectionModel().select(0);
+        lastMainProject = input.get(0);
     }
 
     /**
      * Executa o programa na máquina virtual e exibe o conteúdo do arquivo .lst (código original e montado).
      */
     private void run() {
+        if (clicked)
+            return;
+        clicked = true;
+
         if (!fileAvailable) {
             outputArea.appendText("Por favor, selecione um arquivo.\n");
+            clicked = false;
             return;
         }
 
+        if (cbSelector.getSelectionModel().getSelectedItem() != null){
+            int index = cbSelector.getSelectionModel().getSelectedIndex();
+            String mainProject = selectedFiles.get(index).getAbsolutePath();
+            if (!mainProject.equals(lastMainProject)){
+                lastMainProject = mainProject;
+                input.remove(lastMainProject);
+                input.addFirst(mainProject);
+                loaded = false;
+            }
+        }
+        //System.out.println(input.toString());
 
-        if (!processMacro())
-            return;
-        if (!runAssembler())
-            return;
-
-        String outputPath = saveFile();
-        if (!runLinker(outputPath))
-            return;
+        if (!loaded){
+            if (!processMacro()){
+                clicked = false;
+                return;
+            }
+            if (!runAssembler()){
+                clicked = false;
+                return;
+            }
         
-        /* 
+            outputPath = saveFile();
+            if (outputPath == null){
+                clicked = false;
+                return;
+            }
+            if (!runLinker(outputPath)){
+                clicked = false;
+                return;
+            }
+        }
+        
         virtualMachine.restartMachine();
-        virtualMachine.loadProgram(filepath);
+        virtualMachine.setStackSize(assembler.getStackSize());
+        virtualMachine.loadProgram(outputPath);
         virtualMachine.setMOP(1);
         mopField.setText("1");
-        if (virtualMachine.runProgram())
-            outputArea.appendText("Programa executado com sucesso!\n");
-        else
-            outputArea.appendText("Erro durante a execução do programa.\n");
+        loaded = true;
         updateView();
-        */
+        if (!virtualMachine.runProgram())
+            outputArea.appendText("Erro durante a execução do programa.\n");
+            
+        updateView();
+        clicked = false;
     }
 
     /**
@@ -188,27 +259,67 @@ public class Controller {
     /**
      * Executa o programa passo a passo na máquina virtual.
      */
-    /* 
+     
     private void step() {
+        if (clicked)
+            return;
+        clicked = true;
+
         if (!fileAvailable) {
             outputArea.appendText("Por favor, selecione um arquivo.\n");
+            clicked = false;
             return;
+        }
+
+        if (cbSelector.getSelectionModel().getSelectedItem() != null){
+            int index = cbSelector.getSelectionModel().getSelectedIndex();
+            String mainProject = selectedFiles.get(index).getAbsolutePath();
+            if (!mainProject.equals(lastMainProject)){
+                lastMainProject = mainProject;
+                input.remove(lastMainProject);
+                input.addFirst(mainProject);
+                loaded = false;
+            }
+        }
+
+        if (!loaded){
+            if (!processMacro()){
+                clicked = false;
+                return;
+            }
+            if (!runAssembler()){
+                clicked = false;
+                return;
+            }
+        
+            outputPath = saveFile();
+            if (outputPath == null){
+                clicked = false;
+                return;
+            }
+            if (!runLinker(outputPath)){
+                clicked = false;
+                return;
+            }
         }
 
         if (virtualMachine.getMOP() != 2) {
             virtualMachine.restartMachine();
-            virtualMachine.loadProgram(filepath);
+            virtualMachine.setStackSize(assembler.getStackSize());
+            virtualMachine.loadProgram(outputPath);
+            loaded = true;
             virtualMachine.setMOP(2);
             mopField.setText("2");
         }
 
         if (!virtualMachine.runProgram()) {
             virtualMachine.setMOP(0);
+            outputArea.appendText("Erro durante a execução do programa.\n");
         }
 
         updateView();
+        clicked = false;
     }
-    */
 
     /**
      * Atualiza a interface de acordo com o estado da máquina virtual.
@@ -220,22 +331,21 @@ public class Controller {
 
         for (String key : registers.keySet()) {
             TextField reg = (TextField) gdRegs.lookup("#" + key.toLowerCase() + "Field");
-            reg.setText(Integer.toString(registers.get(key).getData()));
+            reg.setText(registers.get(key).getData());
         }
 
         Memory mem = virtualMachine.getMemory();
         int memSize = mem.getSize();
-
-        for (int i = 0; i < memSize; i++)
-            memItems.add(Integer.toHexString(mem.read(i)));
+        int programStart = 3+assembler.getStackSize();
+        for (int i = 3+assembler.getStackSize(); i < memSize; i++)
+            memItems.add((i-programStart) + String.format(":\t\t") + mem.read(i));
 
         memoriaList.setItems(memItems);
         memoriaList.refresh();
 
-        Stack<Integer> stack = virtualMachine.getStack();
-        for (int num : stack) {
-            stkItems.add(Integer.toHexString(num));
-        }
+        stkItems.add(String.format("Tamanho:\t\t") + mem.read(2));
+        for (int i = 0; i<virtualMachine.getStackSize(); i++) 
+            stkItems.add(i+String.format(":\t\t") + mem.read(3+i));
 
         pilhaList.setItems(stkItems);
         pilhaList.refresh();
@@ -248,11 +358,12 @@ public class Controller {
 
     private boolean processMacro(){
         macroProcessor = new MacroProcessor();  
-        for (File file: selectedFiles){
+        macroOutput = new LinkedList<>();
+        for (String file: input){
             try {
-                String filepath = macroProcessor.processMacros(file.getAbsolutePath());   
-                System.out.println(filepath + " macro");
-                output.addFirst(filepath);  
+                String filepath = macroProcessor.processMacros(file);   
+                //System.out.println(filepath + " macro");
+                macroOutput.add(filepath);  
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
@@ -264,9 +375,9 @@ public class Controller {
     private boolean runAssembler(){
         // Chamar o montador para gerar o arquivo .lst
         assembler = new Assembler(outputArea);
-        LinkedList<String> asmOutput = new LinkedList<>();
-        for (String filepath: output){
-            System.out.println(filepath+" assembler");
+        asmOutput = new LinkedList<>();
+        for (String filepath: macroOutput){
+            //System.out.println(filepath+" assembler");
             int index = filepath.lastIndexOf(".");
             String outputFileName = filepath.substring(0, index) + ".obj";
             asmOutput.add(outputFileName);
@@ -279,7 +390,6 @@ public class Controller {
                 return false;
             }
         }
-        output = asmOutput;
         return true;
     }
 
@@ -288,7 +398,7 @@ public class Controller {
         boolean wasLinked = false;
 
         try{
-            wasLinked = linker.linkPrograms(output, outputPath);
+            wasLinked = linker.linkPrograms(asmOutput, outputPath);
         } catch (Exception e){
             wasLinked = false;
             outputArea.appendText("Não foi possível abrir algum dos arquivos!");
