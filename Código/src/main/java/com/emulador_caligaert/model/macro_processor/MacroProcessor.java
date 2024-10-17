@@ -32,7 +32,7 @@ public class MacroProcessor {
             readingLine(line, new HashMap<String, LinkedList<String>>());
         }
 
-        System.out.println(macroDefinitions);
+        //System.out.println(macroDefinitions);
 
         // Fecha os leitores e escritores
         reader.close();
@@ -103,7 +103,7 @@ public class MacroProcessor {
                 globalParameters.put(formalParameter, realParameter);
             }
 
-            System.out.println(globalParameters);
+            //System.out.println(globalParameters);
             
             for (String macroLine: macroDefinitions.get(macroName)){
                 readingLine(macroLine, globalParameters);
