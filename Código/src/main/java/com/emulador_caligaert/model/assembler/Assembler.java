@@ -29,11 +29,12 @@ public class Assembler {
     private HashMap<String, Integer> symbolsTable;
     private HashMap<String, Integer> definitionTable;
     private HashMap<String, Integer> usageTable;
-    private HashMap<String, ArrayList<Integer>> ocurrenceTable;
+    private HashMap<String, ArrayList<Integer>> signalTable;
+    private HashMap<String, Integer> valueTable;
 
     private ArrayList<Integer> offset;
     private int PC = 0;
-    private int stkSize;
+    private int stkSize = 0;
     private int MAX_INSTRUCTION_LENGTH = 80;
     private int MAX_INSTRUCTION_ITEMS = 5;
     private boolean started = false;
@@ -49,7 +50,8 @@ public class Assembler {
         this.symbolsTable = new HashMap<>();
         this.definitionTable = new HashMap<>();
         this.usageTable = new HashMap<>();
-        this.ocurrenceTable = new HashMap<>();
+        this.signalTable = new HashMap<>();
+        this.valueTable = new HashMap<>();
         this.errorMessages = new ArrayList<>();
         this.instructionList = new ArrayList<>();
         this.originalList = new ArrayList<>();         // Inicializando para armazenar o original
@@ -90,7 +92,6 @@ public class Assembler {
     }
 
     public boolean mount(String filepath){
-        stkSize = 0;
         try {
             File program = new File(filepath);
             Scanner fileReader = new Scanner(program);
@@ -98,6 +99,8 @@ public class Assembler {
             while (fileReader.hasNextLine()) {
                 String instruction = fileReader.nextLine().trim();
                 String[] instructionParts = instruction.split("\\s+");
+                if (instruction.isBlank())
+                    continue;
 
                 if (!validateInstruction(instruction, instructionParts.length)) {
                     fileReader.close();
@@ -113,7 +116,7 @@ public class Assembler {
                 if (isLabel(firstSymbol)){
                     if (!validateLabel(firstSymbol)){
                         outputArea.appendText(errorMessage.getErrorMessage(6));
-                        System.out.println(instruction+ " mn");
+                        //System.out.println(instruction+ " mn");
                         errorMessages.add("Erro: Label inválido: " + firstSymbol);
                         fileReader.close();
                         return false;
@@ -135,6 +138,10 @@ public class Assembler {
                 break;
             }
             fileReader.close();
+            if (started){
+                errorMessages.add(errorMessage.getErrorMessage(10));
+                outputArea.setText(errorMessage.getErrorMessage(10));
+            }
             //secondStep();
             tables.setOffset(offset);
             writeOnOutputFile(filepath);
@@ -147,6 +154,56 @@ public class Assembler {
             errorMessages.add("Erro: Arquivo não encontrado.");
             return false;
         }
+        if (errorMessages.size() == 0)
+            return true;
+        return false;
+    }
+
+    private boolean handleExpression(String operand, String operands){
+        String[] labels = operand.split("[+-]");
+        int startIndex=0;
+        String newOperand = "";
+        //System.out.println(operand);
+        for (int j=0; j<labels.length; j++){
+            String label = labels[j];
+            if (label.isBlank())
+                continue;
+            int begin = operand.indexOf(label, startIndex);
+            
+            //System.out.println("beg " + begin);
+            int signal = 1;
+            int signalIndex = begin - 1;
+            int endIndex = begin+label.length();
+            
+            if (signalIndex >= 0){
+                if (operand.charAt(signalIndex) == '-')
+                    signal = -1;
+            }                
+            //System.out.println("st " + startIndex);
+            //System.out.println("oper "+operand.substring(startIndex, endIndex));
+
+            if (label.matches("\\d+")){
+                //newOperand = newOperand + operand.substring(startIndex, endIndex);
+                //startIndex = endIndex;
+                //System.out.println("num " + startIndex);
+                continue;
+            }
+
+            if (isLabel(label)) {
+                if (!validateLabel(label)){
+                    outputArea.appendText(errorMessage.getErrorMessage(6));
+                    errorMessages.add("Erro: Label inválido: " + operand);
+                    return false;
+                }
+                foundLabel(label, signal);
+                //newOperand = newOperand + operand.substring(startIndex, endIndex);
+                //startIndex = endIndex;
+                //System.out.println("lab "+startIndex);
+                continue;
+            }
+        }    
+        //operands = operands + newOperand + " ";
+        //System.out.println("op " + operands);    
         return true;
     }
 
@@ -162,11 +219,48 @@ public class Assembler {
             PC++;
             for (int i=1; i<instructionParts.length; i++){
                 String operand = instructionParts[i];
-
+                
                 // comentário
                 if (operand.charAt(0) == '*')
                     break;
                 PC++;
+                
+                // mais do que 2 operandos
+                if (i > 3){
+                    return false;
+                }
+
+                // expressão
+                if (operand.split("[+-]").length > 1)
+                    if (handleExpression(operand, operands)){
+                        operands = operands.concat(operand + " ");
+                        int bitIndex = 7 + 1 - i;
+                        opCode = opCode | (int) Math.pow(2, bitIndex);
+                        continue;
+                    }
+                // literal
+                if (operand.charAt(0) == '@'){
+                    String literal = operand.substring(1);
+
+                    if (literal.length() == 1){
+                        
+                        operands = operands.concat(literal + " ");
+                        int bitIndex = 7 + 1 - i;
+                        opCode = opCode | (int) Math.pow(2, bitIndex);
+                        continue;
+                    }
+                }
+
+                // operando em hexadecimal
+                if ((operand.charAt(0) == 'H') && (operand.split("'").length == 2)){
+                    int hexCode = Integer.parseInt(operand.split("\'")[1], 16);
+                    operands.concat(hexCode + " ");
+
+                    int bitIndex = 7 + 1 - i;
+                    opCode = opCode | (int) Math.pow(2, bitIndex);
+                    continue;
+                }
+
                 // endereçamento imediato
                 if (operand.charAt(0) == '#'){
                     String immediateOperand = operand.substring(1);
@@ -178,6 +272,7 @@ public class Assembler {
                         continue;
                     }
                 }
+
                 // enderecamento indireto
                 if (operand.charAt(0) == 'I'){
                     String indirectOperand = operand.substring(1);
@@ -189,9 +284,10 @@ public class Assembler {
                         continue;
                     }
                 }
+                
                 // endereçamento direto
                 if (operand.matches("\\d+")){
-                    operands = operands.concat(operand);
+                    operands = operands.concat(operand + " ");
                     continue;
                 }
 
@@ -199,13 +295,13 @@ public class Assembler {
                 if (isLabel(operand)) {
                     if (!validateLabel(operand)){
                         outputArea.appendText(errorMessage.getErrorMessage(6));
-                        System.out.println(instruction+ " hm");
                         errorMessages.add("Erro: Label inválido: " + operand);
                         return false;
                     }
-                    foundLabel(operand);
+                    foundLabel(operand, 1);
                     operands = operands.concat(operand + " ");
                 }
+    
             }
             instructionCode = opCode + " " + operands;
             instructionList.add(instructionCode);  // Adicionando instrução montada
@@ -235,7 +331,7 @@ public class Assembler {
 
         if (numOfElements != requiredElements) {
             outputArea.appendText(errorMessage.getErrorMessage(6));
-            System.out.println(instruction + " ha");
+            //System.out.println(instruction + " ha");
             errorMessages.add("Erro: Número inválido de elementos para operação: " + operation);
             return false;
         }
@@ -246,9 +342,16 @@ public class Assembler {
                 errorMessages.add("Erro: Não há diretiva END antes de: " + instruction);
                 return false;
             }
-
+            String op = "";
+            try{
+                op = Integer.toString(Integer.parseInt(instructionParts[opIndex+1])+2);
+            } catch (Exception e){
+                op = instructionParts[opIndex+1];
+            }
+            instructionList.add(mnemonics.get("BR") + " " + op);
+            originalList.add("N/A");
+            PC = PC + 2;
             started = true;
-
             return true;
         }
 
@@ -261,10 +364,12 @@ public class Assembler {
         if (operation.equals("CONST")) {
             if (opIndex > 0){
                 String operand = instructionParts[opIndex+1];
+                String label = instructionParts[opIndex-1];
 
                 if (operand.matches("\\d+")){
                     instructionList.add(operand);
                     originalList.add(instruction);
+                    valueTable.put(label, Integer.parseInt(operand));
                 } else {
                     outputArea.appendText(errorMessage.getErrorMessage(3));
                     errorMessages.add("Erro: Operando Inválido: " + operand);
@@ -277,8 +382,11 @@ public class Assembler {
 
         if (operation.equals("SPACE")){
             if (opIndex > 0){
+                String label = instructionParts[opIndex-1];
+
                 instructionList.add("0");
                 originalList.add(instruction);
+                valueTable.put(label, 0);
             }
             PC++;
             return true;
@@ -306,18 +414,39 @@ public class Assembler {
         return false;
     }
 
+    private HashMap<String, ArrayList<Integer>> buildOcurrenceTable(){
+        HashMap<String, ArrayList<Integer>> ocurrenceTable = new HashMap<>();
+        for (String key: signalTable.keySet()){
+            ArrayList<Integer> ocurrences = new ArrayList<>();
+            int size = signalTable.get(key).size();
+            for (int i=0; i<size; i++){
+                int signal = signalTable.get(key).get(i);
+                int value = valueTable.get(key);
+
+                ocurrences.add(signal * value);
+                ocurrenceTable.put(key, ocurrences);
+            }
+        }
+
+        return ocurrenceTable;
+    }
+
     private void restartTables(){
         /*
         symbolsTables.add((HashMap<String, Integer>) symbolsTable.clone());
         definitionTables.add((HashMap<String, Integer>) definitionTable.clone());
         usageTables.add((HashMap<String, Integer>) usageTable.clone());*/
+        HashMap<String, ArrayList<Integer>> ocurrenceTable = buildOcurrenceTable();
         tables.addSymbolTable((HashMap<String, Integer>) symbolsTable.clone());
         tables.addDefinitionTable((HashMap<String, Integer>) definitionTable.clone());
         tables.addUsageTable((HashMap<String, Integer>) usageTable.clone());
+        tables.addOcurrenceTable(ocurrenceTable);
 
         symbolsTable.clear();
         definitionTable.clear();
         usageTable.clear();
+        signalTable.clear();
+        valueTable.clear();
 
         offset.add(PC);
         PC=0;
@@ -396,6 +525,8 @@ public class Assembler {
                 errorMessages.add("Erro: Variável já inicializada: " + label);
                 return false;
             }
+            if (!valueTable.containsKey(label))
+                valueTable.put(label, PC);
             return true;
         }
 
@@ -410,25 +541,34 @@ public class Assembler {
                 errorMessages.add("Erro: Variável já inicializada: " + label);
                 return false;
             }
+            if (!valueTable.containsKey(label))
+                valueTable.put(label, PC);
             return true;
         }
         symbolsTable.put(label, PC);
+        if (!valueTable.containsKey(label))
+            valueTable.put(label, PC);
         return true;
     }
 
-    private void foundLabel(String label) {
+    private void foundLabel(String label, int signal) {
+        
         if (!isDeclared(label))
             symbolsTable.put(label, -1);
 
-        if (!ocurrenceTable.containsKey(label)){
+        if (!signalTable.containsKey(label)){
             ArrayList<Integer> occurrences = new ArrayList<>();
-            occurrences.add(PC);
+            occurrences.add(signal);
 
-            ocurrenceTable.put(label, occurrences);
+            signalTable.put(label, occurrences);
         } else {
-            ocurrenceTable.get(label).add(PC);
+            signalTable.get(label).add(signal);
         }
+        if (!valueTable.containsKey(label))
+            valueTable.put(label, -1);
+            
     }
+    
 
     private boolean intuse(String label){
         if (usageTable.containsKey(label)){
@@ -519,6 +659,14 @@ public class Assembler {
     private void printTables(){
         int segment = 0;
 
+        ArrayList<HashMap<String, ArrayList<Integer>>> ocurrTable = tables.getAllOcurrenceTables();
+        for (HashMap<String, ArrayList<Integer>> table: ocurrTable) {
+            System.out.println("-----------------OT"+segment+"----------------------");
+            for (String key : table.keySet())
+                System.out.println(key + " " + table.get(key).toString());
+            segment++;
+        }
+
         ArrayList<HashMap<String, Integer>> definitionTables = tables.getAllDefinitionTables();
         for (HashMap<String, Integer> table: definitionTables) {
             System.out.println("-----------------DT"+segment+"----------------------");
@@ -550,5 +698,9 @@ public class Assembler {
 
     public Tables getLinkerInfo(){
         return tables;
+    }
+
+    public int getStackSize(){
+        return stkSize;
     }
 }
