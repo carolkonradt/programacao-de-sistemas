@@ -7,6 +7,7 @@ public class Tables {
     private ArrayList<HashMap<String, Integer>> symbolsTables = new ArrayList<>();
     private ArrayList<HashMap<String, Integer>> definitionTables = new ArrayList<>();
     private ArrayList<HashMap<String, Integer>> usageTables = new ArrayList<>();
+    private ArrayList<HashMap<String, ArrayList<Integer>>> ocurrenceTables = new ArrayList<>();
     private ArrayList<Integer> offsetList;
 
     public Tables(){
@@ -78,6 +79,23 @@ public class Tables {
 
     public ArrayList<HashMap<String, Integer>> getAllUsageTables() {
         return new ArrayList<>(usageTables); // Return a copy
+    }
+
+    /*-------------------- ocurrenceTable --------------------- */
+    public void addOcurrenceTable(HashMap<String, ArrayList<Integer>> ocurrenceTable) {
+        ocurrenceTables.add(ocurrenceTable);
+    }
+
+    // Método para pegar um elemento específico na tabela de uso
+    public ArrayList<Integer> getOcurrenceFromTable(int tableIndex, String key) {
+        if (tableIndex >= 0 && tableIndex < ocurrenceTables.size()) {
+            return ocurrenceTables.get(tableIndex).get(key);
+        }
+        return null; // Retorna null se o índice da tabela for inválido
+    }
+
+    public ArrayList<HashMap<String, ArrayList<Integer>>> getAllOcurrenceTables() {
+        return new ArrayList<>(ocurrenceTables); // Return a copy
     }
 
     /*-------------------- offsetList --------------------- */
