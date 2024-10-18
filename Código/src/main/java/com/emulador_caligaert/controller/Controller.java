@@ -201,7 +201,6 @@ public class Controller {
                 loaded = false;
             }
         }
-        //System.out.println(input.toString());
 
         if (!loaded){
             if (!processMacro()){
@@ -362,7 +361,6 @@ public class Controller {
         for (String file: input){
             try {
                 String filepath = macroProcessor.processMacros(file);   
-                //System.out.println(filepath + " macro");
                 macroOutput.add(filepath);  
             } catch (IOException e) {
                 e.printStackTrace();
@@ -377,7 +375,6 @@ public class Controller {
         assembler = new Assembler(outputArea);
         asmOutput = new LinkedList<>();
         for (String filepath: macroOutput){
-            //System.out.println(filepath+" assembler");
             int index = filepath.lastIndexOf(".");
             String outputFileName = filepath.substring(0, index) + ".obj";
             asmOutput.add(outputFileName);
