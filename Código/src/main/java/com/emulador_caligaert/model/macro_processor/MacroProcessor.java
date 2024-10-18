@@ -25,14 +25,11 @@ public class MacroProcessor {
         writer = new BufferedWriter(new FileWriter(outputFileName));
         
         String line;
-        // Pilha para controlar a definição de macros aninhadas
         // Processa linha por linha
         while ((line = reader.readLine()) != null) {
             line = line.trim();
             readingLine(line, new HashMap<String, LinkedList<String>>());
         }
-
-        //System.out.println(macroDefinitions);
 
         // Fecha os leitores e escritores
         reader.close();
@@ -46,7 +43,6 @@ public class MacroProcessor {
     }
     
     private void readingLine(String line, HashMap<String, LinkedList<String>> globalParameters) throws IOException{
-        // Pilha para controlar a definição de macros aninhadas
         Stack<String> macroDefinitionStack = new Stack<>();
 
         if (line.equals("MEND")) {
@@ -62,7 +58,6 @@ public class MacroProcessor {
             insideMacro = true;
             if (currentLevel == 1){
                 flagNewMacro = true;
-            //continue; // pula a linha "MACRO"
                 return;
             }
         }
@@ -90,7 +85,7 @@ public class MacroProcessor {
             macroName = line.split(" ")[0];
             HashMap<String, String> link = matchParameters(line,globalParameters);
 
-                // empilha o parâmetro real na pilha do parâmetro formal correspondente
+            // empilha o parâmetro real na pilha do parâmetro formal correspondente
             for (String formalParameter: link.keySet()){
                 if (globalParameters.containsKey(formalParameter)){
                     String realParameter = link.get(formalParameter);
@@ -102,8 +97,6 @@ public class MacroProcessor {
                 realParameter.add(link.get(formalParameter));
                 globalParameters.put(formalParameter, realParameter);
             }
-
-            //System.out.println(globalParameters);
             
             for (String macroLine: macroDefinitions.get(macroName)){
                 readingLine(macroLine, globalParameters);
