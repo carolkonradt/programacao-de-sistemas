@@ -2,8 +2,6 @@ package com.emulador_caligaert.model.main;
 
 import java.io.IOException;
 
-//import com.emulador_caligaert.virtual_machine.Machine;
-
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -30,9 +28,6 @@ public class Main extends Application {
         // Cria a cena com o layout carregado do FXML
         Scene scene = new Scene(root);
 
-        //MacroProcessor mp = new MacroProcessor();
-
-        //mp.processMacros("/home/rboeira/Área de trabalho/PS/vs/emulador_caligaert/teste.txt");
         // Configura o Stage
         primaryStage.setTitle("Simple CPU Interface");
         primaryStage.setScene(scene);
