@@ -205,6 +205,7 @@ public class Controller {
         if (!loaded){
             if (!processMacro()){
                 clicked = false;
+                outputArea.appendText("Erro ao processar os macros!");
                 return;
             }
             if (!runAssembler()){
@@ -219,6 +220,7 @@ public class Controller {
             }
             if (!runLinker(outputPath)){
                 clicked = false;
+                outputArea.appendText("Erro ao ligar o programa! Cheque por variáveis usadas não definidas!");
                 return;
             }
         }
@@ -284,6 +286,7 @@ public class Controller {
         if (!loaded){
             if (!processMacro()){
                 clicked = false;
+                outputArea.appendText("Erro ao processar os macros!");
                 return;
             }
             if (!runAssembler()){
@@ -298,6 +301,7 @@ public class Controller {
             }
             if (!runLinker(outputPath)){
                 clicked = false;
+                outputArea.appendText("Erro ao ligar o programa! Cheque por variáveis usadas não definidas!");
                 return;
             }
         }
