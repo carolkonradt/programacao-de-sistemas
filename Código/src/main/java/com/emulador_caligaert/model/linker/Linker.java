@@ -25,10 +25,17 @@ public class Linker {
         if (unifiedDefinitionTable.containsKey(code)){
             address = Integer.toString(unifiedDefinitionTable.get(code));
         }
+
+        if (!unifiedDefinitionTable.containsKey(code) && tables.getAllUsageTables().get(programIndex).containsKey(code)){
+            return null;
+        }
+
         if (tables.symbolExistsInTable(programIndex, code)){
             address = Integer.toString(tables.getSymbolFromTable(programIndex, code) + offset);
         }
 
+        if (address.equals("-1"))
+            return null;
         return address;
     }
 
@@ -107,6 +114,11 @@ public class Linker {
                         }
                         
                         address = handleLabel(code, programIndex, offset);
+                        if (address == null){
+                            objReader.close();
+                            objWriter.close();
+                            return false;
+                        }
                         if (address.isBlank())
                             address = code;
                         instructionCode = instructionCode.concat(address+" ");
