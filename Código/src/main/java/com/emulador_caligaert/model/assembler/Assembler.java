@@ -16,12 +16,6 @@ import java.util.Scanner;
 public class Assembler {
     private HashMap<String, Integer> mnemonics;
     private HashMap<String, Integer> assemblerInstructions;
-    
-    /*
-    private ArrayList<HashMap<String, Integer>> symbolsTables;
-    private ArrayList<HashMap<String, Integer>> definitionTables;
-    private ArrayList<HashMap<String, Integer>> usageTables;
-    */
 
     Tables tables;
     Linker linker;
@@ -57,9 +51,6 @@ public class Assembler {
         this.originalList = new ArrayList<>();         // Inicializando para armazenar o original
         this.outputArea = outputArea;
         this.errorMessage = new ErrorMessage();
-        //this.symbolsTables = new ArrayList<>();
-        //this.definitionTables = new ArrayList<>();
-        //this.usageTables = new ArrayList<>();
     
         this.tables = new Tables();
 
@@ -116,7 +107,6 @@ public class Assembler {
                 if (isLabel(firstSymbol)){
                     if (!validateLabel(firstSymbol)){
                         outputArea.appendText(errorMessage.getErrorMessage(6));
-                        //System.out.println(instruction+ " mn");
                         errorMessages.add("Erro: Label inválido: " + firstSymbol);
                         fileReader.close();
                         return false;
@@ -142,10 +132,9 @@ public class Assembler {
                 errorMessages.add(errorMessage.getErrorMessage(10));
                 outputArea.setText(errorMessage.getErrorMessage(10));
             }
-            //secondStep();
             tables.setOffset(offset);
             writeOnOutputFile(filepath);
-            printTables();
+            //printTables();
             instructionList.clear();
             originalList.clear();
             errorMessages.clear();
@@ -163,14 +152,12 @@ public class Assembler {
         String[] labels = operand.split("[+-]");
         int startIndex=0;
         String newOperand = "";
-        //System.out.println(operand);
+
         for (int j=0; j<labels.length; j++){
             String label = labels[j];
             if (label.isBlank())
                 continue;
             int begin = operand.indexOf(label, startIndex);
-            
-            //System.out.println("beg " + begin);
             int signal = 1;
             int signalIndex = begin - 1;
             int endIndex = begin+label.length();
@@ -178,16 +165,11 @@ public class Assembler {
             if (signalIndex >= 0){
                 if (operand.charAt(signalIndex) == '-')
                     signal = -1;
-            }                
-            //System.out.println("st " + startIndex);
-            //System.out.println("oper "+operand.substring(startIndex, endIndex));
+            }               
 
-            if (label.matches("\\d+")){
-                //newOperand = newOperand + operand.substring(startIndex, endIndex);
-                //startIndex = endIndex;
-                //System.out.println("num " + startIndex);
+            if (label.matches("\\d+"))
                 continue;
-            }
+            
 
             if (isLabel(label)) {
                 if (!validateLabel(label)){
@@ -196,14 +178,9 @@ public class Assembler {
                     return false;
                 }
                 foundLabel(label, signal);
-                //newOperand = newOperand + operand.substring(startIndex, endIndex);
-                //startIndex = endIndex;
-                //System.out.println("lab "+startIndex);
                 continue;
             }
-        }    
-        //operands = operands + newOperand + " ";
-        //System.out.println("op " + operands);    
+        }
         return true;
     }
 
@@ -331,7 +308,6 @@ public class Assembler {
 
         if (numOfElements != requiredElements) {
             outputArea.appendText(errorMessage.getErrorMessage(6));
-            //System.out.println(instruction + " ha");
             errorMessages.add("Erro: Número inválido de elementos para operação: " + operation);
             return false;
         }
@@ -601,60 +577,6 @@ public class Assembler {
         definitionTable.put(label, -1);
         return true;
     }
-    /*
-//////////////////////////////////
-    private HashMap<String, Integer> unifyDefinitionTables(){
-        int offset = 0;
-        int programIndex = 0;
-
-        HashMap<String, Integer> unifiedDefinitionTable = new HashMap<>();
-        for (HashMap<String, Integer> table: definitionTables){
-            for (String key: table.keySet()){
-                int address = table.get(key) + offset;
-                unifiedDefinitionTable.put(key, address);
-            }
-            offset = offset+this.offset.get(programIndex);
-            programIndex = programIndex + 1;
-        }
-
-        return unifiedDefinitionTable;
-    }
-/////////////////////////////////
-    private void secondStep(){
-        ArrayList<String> objCode = new ArrayList<>();
-        int currentInstruction = 0;
-        int programIndex = 0;
-        int offset = 0;
-
-        for (String instruction: instructionList){
-            String[] instructionParts = instruction.split(" ");
-            String instructionCode = "";
-            HashMap<String, Integer> unifiedDefinitionTable = unifyDefinitionTables();
-
-            for (String code: instructionParts){
-                String address = code;
-
-                if (unifiedDefinitionTable.containsKey(code))
-                    address = Integer.toString(unifiedDefinitionTable.get(code));
-
-                if (symbolsTables.get(programIndex).containsKey(code))
-                    address = Integer.toString(symbolsTables.get(programIndex).get(code)+offset);
-
-                instructionCode = instructionCode.concat(address+" ");
-                currentInstruction++;
-            }
-
-            if (currentInstruction == this.offset.get(programIndex)){
-                currentInstruction = 0;
-                offset = offset + this.offset.get(programIndex);
-                programIndex++;
-            }
-
-            objCode.add(instructionCode);
-        }
-
-        instructionList = objCode;
-    }*/
 
     private void printTables(){
         int segment = 0;
