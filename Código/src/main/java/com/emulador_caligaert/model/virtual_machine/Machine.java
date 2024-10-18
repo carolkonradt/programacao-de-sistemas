@@ -226,7 +226,8 @@ public class Machine {
     private boolean runInstruction(){
         int currentPC = Integer.parseInt(registers.get("PC").getData());
 
-        //System.out.println("AE:"+mem.read(currentPC));
+        registers.get("RI").setData(mem.read(currentPC));
+        registers.get("RE").setData(mem.read(currentPC+1));
         int operation = Integer.parseInt(mem.read(currentPC)) & 31;
         LinkedList<String> instructionInfo;
 
@@ -244,7 +245,6 @@ public class Machine {
             String operand = mem.read(currentPC + i);
             instruction = instruction + " " + operand;
         }
-        //outputArea.appendText("new pc " + registers.get("PC").getData()+"\n");
 
         return decode(instruction);
     }
@@ -261,8 +261,6 @@ public class Machine {
                 String instruction = fileReader.nextLine();
 
                 for (String code: instruction.split(" ")){
-                    //outputArea.appendText(Integer.toString(programStart+i)+"\n");
-                    //outputArea.appendText(code+"\n");
                     mem.write(programStart+i, code);
                     i++;
                 }
@@ -283,7 +281,6 @@ public class Machine {
      *          operands, instructionAccessMode.
      */
     public boolean decode(String instruction){
-        //outputArea.appendText("inst " + instruction +"\n");
         LinkedList<String> instructionInfo;
 
         ArrayList<String> operands = new ArrayList<>();
@@ -292,30 +289,20 @@ public class Machine {
         String allowedAccessModes;
 
         int operation = Integer.parseInt(instructionParts[0]) & 31;
-
-        //outputArea.appendText("op " + operation+"\n");
         int bitFive = (Integer.parseInt(instructionParts[0]) & 32) >> 5;
-        //outputArea.appendText("5 " + bitFive+"\n");
         int bitSix = (Integer.parseInt(instructionParts[0]) & 64) >> 6;
-        //outputArea.appendText("6 " + bitSix+"\n");
         int bitSeven = (Integer.parseInt(instructionParts[0]) & 128) >> 7;
-        //outputArea.appendText("7 " + bitSeven+"\n");
 
         int accessConfig = (Integer.parseInt(instructionParts[0]) & 224) >> 5;  //Valor dos ultimos 3 bits
-        //outputArea.appendText("ac "+accessConfig+"\n");
         int numOfOperands = instructionParts.length - 1;
-        //outputArea.appendText("opr "+numOfOperands+"\n");
 
         int requiredOperands;
 
         instructionInfo = instructions.get(operation);
 
         requiredOperands = Integer.parseInt(instructionInfo.get(0));
-        //outputArea.appendText("req "+requiredOperands+"\n");
 
         allowedAccessModes = instructionInfo.get(1);
-        //outputArea.appendText("all "+ allowedAccessModes+"\n");
-
         if (numOfOperands != requiredOperands){
             outputArea.appendText(errorMessage.getErrorMessage(6));
             return false;
@@ -329,7 +316,6 @@ public class Machine {
         String[] instructionAccessMode = selectAccessMode(numOfOperands, accessConfig).split("/");
         for (int i=0; i<numOfOperands; i++){
             String mode = instructionAccessMode[i];
-            //outputArea.appendText("md "+ mode+"\n");
 
             if (!(allowedAccessModes.contains(mode)) || mode.equals("")){
                 outputArea.appendText(errorMessage.getErrorMessage(12));
@@ -358,7 +344,7 @@ public class Machine {
 
     public boolean execute(int operation, int numOfOperands, ArrayList<String> operands, String[] instructionAccessMode, int newPC){
         ArrayList<String> data;
-        //System.out.println("oper:" + operands.get(0));
+
         switch(operation){
             case 0:
                 data = getOperands(operands, instructionAccessMode, numOfOperands, 1);
@@ -428,7 +414,7 @@ public class Machine {
                 op = firstLetter;
             }
         }
-        return mem.read(op + programStart); // O operando é o próprio endereço na memória
+        return mem.read(op + programStart); 
     }
 
     /**
@@ -447,7 +433,6 @@ public class Machine {
                 op = firstLetter;
             }
         }
-        // O operando é um endereço que aponta para outro endereço na memória
         return mem.read(op + programStart);
     }
 
@@ -480,7 +465,6 @@ public class Machine {
                 }
                 data.add(searchOperand(modeRelation.get(mode), operand));
             }
-            //outputArea.appendText("opr: "+operands.get(i)+"\n");
         }
         return data;
     }
@@ -492,7 +476,6 @@ public class Machine {
      * @return um int que representa a palavra buscada.
      */
     private String searchOperand(int mode, String operand) {
-        //System.out.println("op:"+operand + " " + mode + " " + programStart);
         switch (mode) {
             case 0: // Direto
                 return directAddress(operand);
@@ -506,7 +489,6 @@ public class Machine {
     } 
 
     private int getFirstLetter(String operand){
-        //System.out.println(operand);
         for (int i=0; i<operand.length(); i++){
             char letter = operand.charAt(i);
 
@@ -541,26 +523,8 @@ public class Machine {
                 isLetter = true;
             }
         }
-        /* 
-        if (isLetter(operand)){
-            System.out.println("e letra op");
-            opA = (int) operand.charAt(0);
-            isLetter = true;
-        }
-        else
-            opA = Integer.parseInt(operand);
-        */
-        /* 
-        if (isLetter(currentACC)){
-            System.out.println("e letra acc");
-            opB = (int) currentACC.charAt(0);
-            isLetter = true;
-        }
-        else
-            opB = Integer.parseInt(currentACC);
-            */
+        
         int newACC = opA + opB;
-        //System.out.println(newACC + " " + opA + " " + opB);
             
         if (isLetter)
             registers.get("ACC").setData("" + (char) newACC);
@@ -787,7 +751,6 @@ public class Machine {
     }
 
     private boolean store(String memPosition, int newPC){
-        //System.out.println("mem:" + memPosition);
         int op = 0;
 
         try{
@@ -798,7 +761,6 @@ public class Machine {
                 op = firstLetter;
             }
         }
-        //outputArea.appendText("mem "+memPosition+"\n");
         if (!mem.write(op, registers.get("ACC").getData())){
             outputArea.appendText("Erro: endereço fora do alcance da memória: " + memPosition);
             return false;
@@ -834,7 +796,7 @@ public class Machine {
         td.setHeaderText("Ler Entrada");
         Optional<String> input = td.showAndWait();
 
-        if (input.isEmpty()){   // mostrar erro
+        if (input.isEmpty()){   
             outputArea.appendText("Erro: nenhum valor informado para a leitura.");
             return false;
         }
@@ -860,12 +822,10 @@ public class Machine {
             int firstLetter = getFirstLetter(data);
             data = ""+(char) firstLetter; 
         }
-        //System.out.println("data:"+data);
         if (!mem.write(op, data)){
             outputArea.appendText("Erro: endereço fora do alcance da memória: " + memPosition);
             return false;
         }
-        //System.out.println(registers.get("PC").getData() + " " + newPC + " " + memPosition);
         registers.get("PC").setData(Integer.toString(newPC));
         return true;
     }
@@ -878,6 +838,7 @@ public class Machine {
 
     private boolean call(String operand, int newPC){
         if (stack.size() == stackSize){
+            registers.get("SP").setData("0");
             outputArea.appendText("Stack Overflow\n");
             return false;
         }
@@ -885,17 +846,21 @@ public class Machine {
         stack.push(newPC);
         mem.write(2+stack.size(), Integer.toString(newPC));
         registers.get("PC").setData(operand);
+        registers.get("SP").setData(Integer.toString(stack.size()));
         return true;
     }
 
     private boolean ret(){
-        mem.write(2+stack.size(), "0");
+        int memPosition = 2+stack.size();
+        if (memPosition != 2)
+            mem.write(memPosition, "0");
         try{
             registers.get("PC").setData(Integer.toString((int) stack.pop()));
         } catch (EmptyStackException es){
             outputArea.appendText("Erro: tentativa de desempilhar stack vazia.");
             return false;
         }
+        registers.get("SP").setData(Integer.toString(stack.size()));
         return true;
     }
 
