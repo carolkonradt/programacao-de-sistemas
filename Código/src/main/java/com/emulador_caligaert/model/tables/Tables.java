@@ -40,7 +40,7 @@ public class Tables {
     }
 
     public ArrayList<HashMap<String, Integer>> getAllSymbolsTables() {
-        return new ArrayList<>(symbolsTables); // Return a copy
+        return new ArrayList<>(symbolsTables); 
     }
 
 
@@ -59,7 +59,7 @@ public class Tables {
     }
 
     public ArrayList<HashMap<String, Integer>> getAllDefinitionTables() {
-        return new ArrayList<>(definitionTables); // Return a copy
+        return new ArrayList<>(definitionTables); 
     }
 
 
@@ -78,7 +78,7 @@ public class Tables {
     }
 
     public ArrayList<HashMap<String, Integer>> getAllUsageTables() {
-        return new ArrayList<>(usageTables); // Return a copy
+        return new ArrayList<>(usageTables); 
     }
 
     /*-------------------- ocurrenceTable --------------------- */
@@ -95,7 +95,7 @@ public class Tables {
     }
 
     public ArrayList<HashMap<String, ArrayList<Integer>>> getAllOcurrenceTables() {
-        return new ArrayList<>(ocurrenceTables); // Return a copy
+        return new ArrayList<>(ocurrenceTables);
     }
 
     /*-------------------- offsetList --------------------- */
