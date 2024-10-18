@@ -319,11 +319,15 @@ public class Assembler {
                 return false;
             }
             String op = "";
+            int lastOffset = 0;
+            if (offset.size() > 0)
+                lastOffset = offset.getLast();
             try{
-                op = Integer.toString(Integer.parseInt(instructionParts[opIndex+1])+2);
+                op = Integer.toString(Integer.parseInt(instructionParts[opIndex+1])+lastOffset+2);
             } catch (Exception e){
                 op = instructionParts[opIndex+1];
             }
+            
             instructionList.add(mnemonics.get("BR") + " " + op);
             originalList.add("N/A");
             PC = PC + 2;
